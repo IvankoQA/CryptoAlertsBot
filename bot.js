@@ -468,15 +468,48 @@ async function main() {
 
   // First run
   if (shouldSendFullReport()) {
-    await createReport();
+    try {
+      await createReport();
+    } catch (error) {
+      console.error("❌ First report failed:", error.message);
+    }
   }
 
   // Automatic check
   setInterval(async () => {
     if (shouldSendFullReport()) {
-      await createReport();
+      try {
+        await createReport();
+      } catch (error) {
+        console.error("❌ Scheduled report failed:", error.message);
+      }
     }
   }, CHECK_INTERVAL_MIN * 60 * 1000);
+
+  // Keep the process alive
+  console.log("✅ Bot is running and monitoring...");
 }
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('🛑 Bot shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('🛑 Bot shutting down gracefully...');
+  process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Don't exit, let the bot continue running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit, let the bot continue running
+});
 
 main();
