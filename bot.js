@@ -12,8 +12,7 @@ let lastPrices = null;
 // ====== Create Report ======
 async function createReport(isScheduled = false) {
   try {
-    const { prices, btcDominance, btcDominanceChange } =
-      await marketService.getMarketData();
+    const { prices, btcDominance } = await marketService.getMarketData();
 
     let message = "🚀 *Crypto Report*\n\n";
 
@@ -21,13 +20,18 @@ async function createReport(isScheduled = false) {
     config.COINS.forEach((coin) => {
       const p = prices[coin];
       if (p && p.usd) {
-        const change24h = p.change_24h?.toFixed(2) || "0.00";
+        const change24h =
+          typeof p.change_24h === "number" ? p.change_24h.toFixed(2) : "N/A";
+        const change7d =
+          typeof p.change_7d === "number" ? p.change_7d.toFixed(2) : "";
         const low24h = p.usd_24h_low?.toLocaleString() || "N/A";
         const high24h = p.usd_24h_high?.toLocaleString() || "N/A";
 
         message += `*${coin.toUpperCase()}*\n`;
         message += `💰 Current: $${p.usd.toLocaleString()}\n`;
-        message += `📊 24h: ${change24h}%\n`;
+        message += `📊 24h: ${change24h}%${
+          change7d ? ` (7d: ${change7d}%)` : ""
+        }\n`;
         message += `📉 Min: $${low24h}\n`;
         message += `📈 Max: $${high24h}\n\n`;
       } else {
@@ -35,20 +39,13 @@ async function createReport(isScheduled = false) {
       }
     });
 
-    const dominance = btcDominance?.toFixed(2) || "0.00";
-    const dominanceChange = btcDominanceChange
-      ? (btcDominanceChange > 0 ? "+" : "") + btcDominanceChange.toFixed(2)
-      : "0.00";
-    message += `📈 BTC Dominance: ${dominance}% (${dominanceChange}% 24h)\n\n`;
+    const dominance = btcDominance?.toFixed(2) || "N/A";
+    message += `📈 BTC Dominance: ${dominance}%\n\n`;
 
     // Add AI analysis only for scheduled reports
     if (isScheduled) {
       try {
-        const advice = await aiService.getAIAdvice(
-          prices,
-          btcDominance,
-          btcDominanceChange
-        );
+        const advice = await aiService.getAIAdvice(prices, btcDominance);
         message += advice;
       } catch (aiError) {
         console.log("⚠️ AI analysis failed, using simple summary");
@@ -79,19 +76,9 @@ async function createReport(isScheduled = false) {
 async function testAI() {
   console.log("🧪 Testing AI services...");
 
-  const openaiStatus = (await aiService.testOpenAI())
-    ? "✅ Available"
-    : "❌ Unavailable";
-  const geminiStatus = (await aiService.testGemini())
-    ? "✅ Available"
-    : "❌ Unavailable";
-  const deepSeekStatus = (await aiService.testDeepSeek())
-    ? "✅ Available"
-    : "❌ Unavailable";
-
-  console.log(`OpenAI: ${openaiStatus}`);
-  console.log(`Gemini: ${geminiStatus}`);
-  console.log(`DeepSeek: ${deepSeekStatus}`);
+  await aiService.testOpenAI();
+  await aiService.testGemini();
+  await aiService.testDeepSeek();
 
   try {
     const data = await marketService.getMarketData();
@@ -182,7 +169,9 @@ async function main() {
         );
 
         if (hasSignificantChanges) {
-          console.log(`📊 Sending scheduled full report (changes > ${config.SCHEDULED_REPORT_MIN_CHANGE}%)...`);
+          console.log(
+            `📊 Sending scheduled full report (changes > ${config.SCHEDULED_REPORT_MIN_CHANGE}%)...`
+          );
           try {
             await createReport(true); // Full report with AI
           } catch (error) {
@@ -190,7 +179,9 @@ async function main() {
             await createReport(false); // Simple report without AI
           }
         } else {
-          console.log(`⏭️ Skipping scheduled report - no significant changes (> ${config.SCHEDULED_REPORT_MIN_CHANGE}%)`);
+          console.log(
+            `⏭️ Skipping scheduled report - no significant changes (> ${config.SCHEDULED_REPORT_MIN_CHANGE}%)`
+          );
         }
       }
 

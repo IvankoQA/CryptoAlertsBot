@@ -1,13 +1,12 @@
 const OpenAI = require("openai");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { HfInference } = require("@huggingface/inference");
+
 const axios = require("axios");
 const config = require("../config");
 
 // Initialize AI services
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 // ====== AI API Check ======
 async function testOpenAI() {
@@ -20,7 +19,7 @@ async function testOpenAI() {
     });
     return true;
   } catch (err) {
-    console.log("OpenAI test error:", err.message);
+    console.log("OpenAI: ❌ Unavailable (quota exceeded)");
     return false;
   }
 }
@@ -32,7 +31,7 @@ async function testGemini() {
     await model.generateContent("Test");
     return true;
   } catch (err) {
-    console.log("Gemini test error:", err.message);
+    console.log("Gemini: ❌ Unavailable (quota exceeded)");
     return false;
   }
 }
@@ -56,22 +55,7 @@ async function testDeepSeek() {
     );
     return true;
   } catch (err) {
-    console.log("DeepSeek test error:", err.message);
-    return false;
-  }
-}
-
-async function testHuggingFace() {
-  if (!config.hasHuggingFace) return false;
-  try {
-    await hf.textGeneration({
-      model: "gpt2",
-      inputs: "Test",
-      parameters: { max_new_tokens: config.AI_TEST_TOKENS },
-    });
-    return true;
-  } catch (err) {
-    console.log("HuggingFace test error:", err.message);
+    console.log("DeepSeek: ❌ Unavailable (payment required)");
     return false;
   }
 }
@@ -256,7 +240,6 @@ module.exports = {
   testOpenAI,
   testGemini,
   testDeepSeek,
-  testHuggingFace,
   getAIAdvice,
   generateSimpleAnalysis,
 };

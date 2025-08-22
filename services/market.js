@@ -13,7 +13,9 @@ async function getTopCoinsFromBinance() {
     // Filter USDT pairs and sort by volume
     const usdtPairs = allTickers
       .filter((ticker) => ticker.symbol.endsWith("USDT"))
-      .filter((ticker) => parseFloat(ticker.quoteVolume) > config.MIN_VOLUME_USD) // Min volume from config
+      .filter(
+        (ticker) => parseFloat(ticker.quoteVolume) > config.MIN_VOLUME_USD
+      ) // Min volume from config
       .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
       .slice(0, config.TOP_COINS_LIMIT); // Top coins limit from config
 
@@ -42,25 +44,47 @@ async function getMarketDataFromBinance() {
     // Get top coins and gainers
     const { allPairs, topGainers } = await getTopCoinsFromBinance();
 
-    // Get BTC and ETH data
-    const [btcResponse, ethResponse] = await Promise.all([
-      axios.get("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
-      axios.get("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT"),
-    ]);
+    // Get BTC and ETH data (24h and 7d)
+    const [btcResponse, ethResponse, btc7dResponse, eth7dResponse] =
+      await Promise.all([
+        axios.get("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
+        axios.get("https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT"),
+        axios.get(
+          "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=7"
+        ),
+        axios.get(
+          "https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=7"
+        ),
+      ]);
 
     const btcData = btcResponse.data;
     const ethData = ethResponse.data;
 
-    // Get BTC dominance from external API
+    // Calculate 7-day changes
+    const btc7dData = btc7dResponse.data;
+    const eth7dData = eth7dResponse.data;
+
+    const btc7dChange =
+      btc7dData.length >= 7
+        ? ((parseFloat(btcData.lastPrice) - parseFloat(btc7dData[0][4])) /
+            parseFloat(btc7dData[0][4])) *
+          100
+        : null;
+    const eth7dChange =
+      eth7dData.length >= 7
+        ? ((parseFloat(ethData.lastPrice) - parseFloat(eth7dData[0][4])) /
+            parseFloat(eth7dData[0][4])) *
+          100
+        : null;
+
+    // Get BTC dominance from CoinGecko
     let btcDominance = config.BTC_DOMINANCE_FALLBACK;
-    let btcDominanceChange = 0;
     try {
-      // Try to get BTC dominance from CoinGecko global data
-      const globalResponse = await axios.get("https://api.coingecko.com/api/v3/global");
-      btcDominance = globalResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
-      btcDominanceChange = globalResponse.data.data.market_cap_change_percentage_24h_usd?.btc || 0;
+      const dominanceResponse = await axios.get("https://api.coingecko.com/api/v3/global");
+      btcDominance = dominanceResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
     } catch (err) {
-      console.log("Using fallback BTC dominance value");
+      console.log("CoinGecko global data unavailable, using fallback BTC dominance value");
+      btcDominance = 55.0; // Conservative estimate
     }
 
     // Process top gainers for altcoins
@@ -69,12 +93,12 @@ async function getMarketDataFromBinance() {
       const coinName = ticker.symbol.replace("USDT", "");
       const change24h = parseFloat(ticker.priceChangePercent);
       const volume = parseFloat(ticker.quoteVolume);
-      
+
       altcoinData[coinName] = {
         usd: parseFloat(ticker.lastPrice),
         change_24h: change24h,
         volume: volume,
-        volume_formatted: (volume / 1000000).toFixed(1) + "M" // Volume in millions (hardcoded for display format)
+        volume_formatted: (volume / 1000000).toFixed(1) + "M", // Volume in millions (hardcoded for display format)
       };
     });
 
@@ -84,83 +108,31 @@ async function getMarketDataFromBinance() {
         usd_24h_low: parseFloat(btcData.lowPrice),
         usd_24h_high: parseFloat(btcData.highPrice),
         change_24h: parseFloat(btcData.priceChangePercent),
+        change_7d: btc7dChange,
       },
       ethereum: {
         usd: parseFloat(ethData.lastPrice),
         usd_24h_low: parseFloat(ethData.lowPrice),
         usd_24h_high: parseFloat(ethData.highPrice),
         change_24h: parseFloat(ethData.priceChangePercent),
+        change_7d: eth7dChange,
       },
       altcoins: altcoinData,
     };
 
-    return { prices, btcDominance, btcDominanceChange, topGainers };
+    return { prices, btcDominance, topGainers };
   } catch (err) {
     throw new Error(`Binance API error: ${err.message}`);
   }
 }
 
-// ====== Get Data from CoinGecko ======
-async function getMarketDataFromCoinGecko() {
-  try {
-    // Get base prices and detailed data
-    const [priceResponse, detailedResponse, globalResponse] = await Promise.all([
-      axios.get(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${config.COINS.join(
-          ","
-        )}&vs_currencies=usd&include_24hr_change=true`
-      ),
-      axios.get(
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${config.COINS.join(
-          ","
-        )}&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h`
-      ),
-      axios.get("https://api.coingecko.com/api/v3/global"),
-    ]);
-
-    const prices = priceResponse.data;
-    const detailed = detailedResponse.data;
-
-    // Merge data
-    detailed.forEach((coin) => {
-      if (prices[coin.id]) {
-        prices[coin.id] = {
-          ...prices[coin.id],
-          usd_24h_low: coin.low_24h,
-          usd_24h_high: coin.high_24h,
-        };
-      }
-    });
-
-    // Get BTC dominance from global data
-    const btcDominance = globalResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
-    
-    // Get BTC dominance change from global data
-    const btcDominanceChange = globalResponse.data.data.market_cap_change_percentage_24h_usd?.btc || 0;
-
-    return { prices, btcDominance, btcDominanceChange };
-  } catch (err) {
-    throw new Error(`CoinGecko API error: ${err.message}`);
-  }
-}
-
-// ====== Get Market Data (with fallback) ======
+// ====== Get Market Data ======
 async function getMarketData() {
-  try {
-    return await getMarketDataFromCoinGecko();
-  } catch (err) {
-    // Fallback to Binance
-    try {
-      return await getMarketDataFromBinance();
-    } catch (err2) {
-      throw new Error(`All APIs unavailable: ${err.message} | ${err2.message}`);
-    }
-  }
+  return await getMarketDataFromBinance();
 }
 
 module.exports = {
   getTopCoinsFromBinance,
   getMarketDataFromBinance,
-  getMarketDataFromCoinGecko,
-  getMarketData
+  getMarketData,
 };

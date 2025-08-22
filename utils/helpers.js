@@ -8,12 +8,6 @@ function shouldSendFullReport() {
   return config.SCHEDULED_REPORT_HOURS.includes(hour);
 }
 
-function shouldCheckPrices() {
-  const now = new Date();
-  const minutes = now.getMinutes();
-  return minutes % config.CHECK_INTERVAL_MIN === 0;
-}
-
 // ====== Status Check ======
 async function checkStatus() {
   console.log("🔍 Checking services status...\n");
@@ -37,32 +31,12 @@ async function checkStatus() {
       process.env.DEEPSEEK_API_KEY ? "✅ Set" : "❌ Missing"
     }`
   );
-  console.log(
-    `  HUGGINGFACE_API_KEY: ${
-      process.env.HUGGINGFACE_API_KEY ? "✅ Set" : "❌ Missing"
-    }`
-  );
 
   // AI Services check
   console.log("\n🤖 AI Services:");
-  const isOpenAIAvailable = await aiService.testOpenAI();
-  const isGeminiAvailable = await aiService.testGemini();
-  const isDeepSeekAvailable = await aiService.testDeepSeek();
-  const isHuggingFaceAvailable = await aiService.testHuggingFace();
-  console.log(
-    `  OpenAI: ${isOpenAIAvailable ? "✅ Available" : "❌ Unavailable"}`
-  );
-  console.log(
-    `  Gemini: ${isGeminiAvailable ? "✅ Available" : "❌ Unavailable"}`
-  );
-  console.log(
-    `  DeepSeek: ${isDeepSeekAvailable ? "✅ Available" : "❌ Unavailable"}`
-  );
-  console.log(
-    `  HuggingFace: ${
-      isHuggingFaceAvailable ? "✅ Available" : "❌ Unavailable"
-    }`
-  );
+  await aiService.testOpenAI();
+  await aiService.testGemini();
+  await aiService.testDeepSeek();
 
   // Data APIs check
   console.log("\n📊 Data APIs:");
@@ -87,9 +61,7 @@ async function checkStatus() {
 
   // Check Telegram
   try {
-    await axios.get(
-      `https://api.telegram.org/bot${config.BOT_TOKEN}/getMe`
-    );
+    await axios.get(`https://api.telegram.org/bot${config.BOT_TOKEN}/getMe`);
     console.log("  Telegram: ✅ Available");
   } catch (err) {
     console.log("  Telegram: ❌ Unavailable");
@@ -98,6 +70,5 @@ async function checkStatus() {
 
 module.exports = {
   shouldSendFullReport,
-  shouldCheckPrices,
-  checkStatus
+  checkStatus,
 };
