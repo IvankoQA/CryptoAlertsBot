@@ -1,0 +1,230 @@
+const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { HfInference } = require("@huggingface/inference");
+const axios = require("axios");
+const config = require("../config");
+
+// Initialize AI services
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+
+// ====== AI API Check ======
+async function testOpenAI() {
+  if (!config.hasOpenAI) return false;
+  try {
+    await openai.chat.completions.create({
+      model: "gpt-3.5-turbo-0125", // Cheaper model
+      messages: [{ role: "user", content: "Test" }],
+      max_tokens: 5,
+    });
+    return true;
+  } catch (err) {
+    console.log("OpenAI test error:", err.message);
+    return false;
+  }
+}
+
+async function testGemini() {
+  if (!config.hasGemini) return false;
+  try {
+    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    await model.generateContent("Test");
+    return true;
+  } catch (err) {
+    console.log("Gemini test error:", err.message);
+    return false;
+  }
+}
+
+async function testDeepSeek() {
+  if (!config.hasDeepSeek) return false;
+  try {
+    await axios.post(
+      "https://api.deepseek.com/v1/chat/completions",
+      {
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: "Test" }],
+        max_tokens: 5,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return true;
+  } catch (err) {
+    console.log("DeepSeek test error:", err.message);
+    return false;
+  }
+}
+
+async function testHuggingFace() {
+  if (!config.hasHuggingFace) return false;
+  try {
+    await hf.textGeneration({
+      model: "gpt2",
+      inputs: "Test",
+      parameters: { max_new_tokens: 5 },
+    });
+    return true;
+  } catch (err) {
+    console.log("HuggingFace test error:", err.message);
+    return false;
+  }
+}
+
+// ====== AI Analysis ======
+async function getAIAdvice(prices, btcDominance) {
+  // Form altcoin data
+  let altcoinInfo = "";
+  if (prices.altcoins) {
+    const topGainers = Object.entries(prices.altcoins)
+      .filter(([_, data]) => data.change_24h > 0)
+      .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
+      .slice(0, 3);
+
+    if (topGainers.length > 0) {
+      altcoinInfo =
+        "\nAltcoins (gaining):\n" +
+        topGainers
+          .map(
+            ([coin, data]) =>
+              `- ${coin.replace("USDT", "")}: +${data.change_24h.toFixed(2)}%`
+          )
+          .join("\n");
+    }
+  }
+
+  const prompt = `Crypto trader analysis. Data: BTC $${prices.bitcoin.usd} (${
+    prices.bitcoin.change_24h?.toFixed(2) || "N/A"
+  }%), ETH $${prices.ethereum.usd} (${
+    prices.ethereum.change_24h?.toFixed(2) || "N/A"
+  }%), BTC dominance ${btcDominance.toFixed(2)}%${altcoinInfo}
+
+        Brief analysis:
+        📉 Trend: Key levels
+        📊 BTC Dominance: Altseason timing
+        💰 Actions: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
+        🚀 Altcoins: Top opportunities
+
+        Give specific price levels for entry/exit. Be concise, trader style.`;
+
+  // Try OpenAI
+  if (config.hasOpenAI) {
+    try {
+      const isOpenAIAvailable = await testOpenAI();
+      if (isOpenAIAvailable) {
+        const response = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo-0125", // Cheaper model
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an experienced cryptocurrency trader with 10+ years of trading experience. Provide short, concise, fact-based advice as a professional. Only facts, numbers, and specific actions. No fluff.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.3,
+          max_tokens: 150,
+        });
+
+        if (response.choices?.[0]?.message?.content) {
+          return `🤖 AI Analysis (GPT-3.5):\n${response.choices[0].message.content}`;
+        }
+      }
+    } catch (err) {
+      // Continue to next AI
+    }
+  }
+
+  // Try Gemini
+  if (config.hasGemini) {
+    try {
+      const isGeminiAvailable = await testGemini();
+      if (isGeminiAvailable) {
+        const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        return `🤖 AI Analysis (Gemini):\n${result.response.text()}`;
+      }
+    } catch (err) {
+      // Continue
+    }
+  }
+
+  // Try DeepSeek
+  if (config.hasDeepSeek) {
+    try {
+      const isDeepSeekAvailable = await testDeepSeek();
+      if (isDeepSeekAvailable) {
+        const response = await axios.post(
+          "https://api.deepseek.com/v1/chat/completions",
+          {
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 200,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        return `🤖 AI Analysis (DeepSeek):\n${response.data.choices[0].message.content}`;
+      }
+    } catch (err) {
+      // Continue
+    }
+  }
+
+  // If all AI services fail, return simple analysis
+  console.log("⚠️ All AI services unavailable, using simple analysis");
+  return generateSimpleAnalysis(prices, btcDominance);
+}
+
+function generateSimpleAnalysis(prices, btcDominance) {
+  // Just pass raw data to AI - no calculations
+  const btcPrice = prices.bitcoin.usd;
+  const ethPrice = prices.ethereum.usd;
+  const btcChange = prices.bitcoin.change_24h || 0;
+  const ethChange = prices.ethereum.change_24h || 0;
+  
+  // Get top gainers data
+  let altcoinInfo = "";
+  if (prices.altcoins && Object.keys(prices.altcoins).length > 0) {
+    const topGainers = Object.entries(prices.altcoins)
+      .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
+      .slice(0, 5);
+    
+    altcoinInfo =
+      "\nAltcoins: " +
+      topGainers
+        .map(
+          ([coin, data]) =>
+            `${coin}: $${data.usd} (+${data.change_24h.toFixed(2)}%)`
+        )
+        .join(", ");
+  }
+  
+  return `🤖 Market Data for AI Analysis:
+BTC: $${btcPrice} (${btcChange.toFixed(2)}%)
+ETH: $${ethPrice} (${ethChange.toFixed(2)}%)
+BTC Dominance: ${btcDominance.toFixed(2)}%${altcoinInfo}
+
+Please provide trading analysis with entry/exit prices.`;
+}
+
+module.exports = {
+  testOpenAI,
+  testGemini,
+  testDeepSeek,
+  testHuggingFace,
+  getAIAdvice,
+  generateSimpleAnalysis
+};
