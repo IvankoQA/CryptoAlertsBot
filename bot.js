@@ -508,6 +508,18 @@ async function testAI() {
   }
 }
 
+// ====== HTTP Server for Railway Healthcheck ======
+const http = require("http");
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ 
+    status: "ok", 
+    message: "Crypto Bot is running",
+    timestamp: new Date().toISOString()
+  }));
+});
+
 // ====== Запуск ======
 async function main() {
   console.log("🤖 Crypto Bot Started");
@@ -530,6 +542,12 @@ async function main() {
     await checkStatus();
     return;
   }
+
+  // Start HTTP server for Railway healthcheck
+  const port = process.env.PORT || 3000;
+  server.listen(port, () => {
+    console.log(`🌐 HTTP server running on port ${port}`);
+  });
 
   // First run
   if (shouldSendFullReport()) {
