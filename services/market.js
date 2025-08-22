@@ -51,18 +51,28 @@ async function getMarketDataFromBinance() {
     const btcData = btcResponse.data;
     const ethData = ethResponse.data;
 
-    // Calculate BTC dominance from 24hr ticker
-    const btcDominance =
-      parseFloat(btcData.priceChangePercent) || config.BTC_DOMINANCE_FALLBACK;
+    // Get BTC dominance from external API
+    let btcDominance = config.BTC_DOMINANCE_FALLBACK;
+    try {
+      // Try to get BTC dominance from CoinGecko global data
+      const globalResponse = await axios.get("https://api.coingecko.com/api/v3/global");
+      btcDominance = globalResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
+    } catch (err) {
+      console.log("Using fallback BTC dominance value");
+    }
 
     // Process top gainers for altcoins
     const altcoinData = {};
     topGainers.forEach((ticker) => {
       const coinName = ticker.symbol.replace("USDT", "");
+      const change24h = parseFloat(ticker.priceChangePercent);
+      const volume = parseFloat(ticker.quoteVolume);
+      
       altcoinData[coinName] = {
         usd: parseFloat(ticker.lastPrice),
-        change_24h: parseFloat(ticker.priceChangePercent),
-        volume: parseFloat(ticker.quoteVolume),
+        change_24h: change24h,
+        volume: volume,
+        volume_formatted: (volume / 1000000).toFixed(1) + "M" // Volume in millions
       };
     });
 

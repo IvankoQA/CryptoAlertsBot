@@ -16,7 +16,7 @@ async function createReport(isScheduled = false) {
 
     let message = "🚀 *Crypto Report*\n\n";
 
-    // Main coins info - safely
+        // Main coins info - safely
     config.COINS.forEach((coin) => {
       const p = prices[coin];
       if (p && p.usd) {
@@ -24,14 +24,18 @@ async function createReport(isScheduled = false) {
         const low24h = p.usd_24h_low?.toLocaleString() || "N/A";
         const high24h = p.usd_24h_high?.toLocaleString() || "N/A";
         
-        message += `*${coin.toUpperCase()}*: $${p.usd.toLocaleString()}\n24h: ${change24h}% (min: $${low24h}, max: $${high24h})\n\n`;
+        message += `*${coin.toUpperCase()}*\n`;
+        message += `💰 Current: $${p.usd.toLocaleString()}\n`;
+        message += `📊 24h: ${change24h}%\n`;
+        message += `📉 Min: $${low24h}\n`;
+        message += `📈 Max: $${high24h}\n\n`;
       } else {
         message += `*${coin.toUpperCase()}*: Data unavailable\n\n`;
       }
     });
 
     const dominance = btcDominance?.toFixed(2) || "0.00";
-    message += `📈 BTC dominance: ${dominance}%\n\n`;
+    message += `📈 BTC Dominance: ${dominance}%\n\n`;
 
     // Add AI analysis only for scheduled reports
     if (isScheduled) {
@@ -40,12 +44,18 @@ async function createReport(isScheduled = false) {
         message += advice;
       } catch (aiError) {
         console.log("⚠️ AI analysis failed, using simple summary");
-        const simpleAnalysis = aiService.generateSimpleAnalysis(prices, btcDominance);
+        const simpleAnalysis = aiService.generateSimpleAnalysis(
+          prices,
+          btcDominance
+        );
         message += simpleAnalysis;
       }
     } else {
       // For price alerts, add simple analysis
-      const simpleAnalysis = aiService.generateSimpleAnalysis(prices, btcDominance);
+      const simpleAnalysis = aiService.generateSimpleAnalysis(
+        prices,
+        btcDominance
+      );
       message += simpleAnalysis;
     }
 
@@ -61,9 +71,15 @@ async function createReport(isScheduled = false) {
 async function testAI() {
   console.log("🧪 Testing AI services...");
 
-  const openaiStatus = (await aiService.testOpenAI()) ? "✅ Available" : "❌ Unavailable";
-  const geminiStatus = (await aiService.testGemini()) ? "✅ Available" : "❌ Unavailable";
-  const deepSeekStatus = (await aiService.testDeepSeek()) ? "✅ Available" : "❌ Unavailable";
+  const openaiStatus = (await aiService.testOpenAI())
+    ? "✅ Available"
+    : "❌ Unavailable";
+  const geminiStatus = (await aiService.testGemini())
+    ? "✅ Available"
+    : "❌ Unavailable";
+  const deepSeekStatus = (await aiService.testDeepSeek())
+    ? "✅ Available"
+    : "❌ Unavailable";
 
   console.log(`OpenAI: ${openaiStatus}`);
   console.log(`Gemini: ${geminiStatus}`);
@@ -71,7 +87,10 @@ async function testAI() {
 
   try {
     const data = await marketService.getMarketData();
-    const analysis = await aiService.getAIAdvice(data.prices, data.btcDominance);
+    const analysis = await aiService.getAIAdvice(
+      data.prices,
+      data.btcDominance
+    );
     console.log("✅ Analysis result:", analysis);
   } catch (error) {
     console.log("⚠️ AI services unavailable, using simple analysis");
@@ -88,7 +107,9 @@ async function testAI() {
 async function main() {
   console.log("🤖 Crypto Bot Started");
   console.log(`⏰ Checking every ${config.CHECK_INTERVAL_MIN} minutes`);
-  console.log(`📊 Full reports at ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00`);
+  console.log(
+    `📊 Full reports at ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00`
+  );
   console.log(`🚨 Price alerts threshold: ${config.PRICE_ALERT_THRESHOLD}%`);
 
   const command = process.argv[2];

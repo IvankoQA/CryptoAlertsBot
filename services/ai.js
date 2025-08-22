@@ -190,13 +190,7 @@ async function getAIAdvice(prices, btcDominance) {
 
 function generateSimpleAnalysis(prices, btcDominance) {
   try {
-    // Safe data extraction with fallbacks
-    const btcPrice = prices?.bitcoin?.usd || 0;
-    const ethPrice = prices?.ethereum?.usd || 0;
-    const btcChange = prices?.bitcoin?.change_24h || 0;
-    const ethChange = prices?.ethereum?.change_24h || 0;
-    
-    // Get top gainers data safely
+    // Get top gainers data safely with trend analysis
     let altcoinInfo = "";
     if (prices?.altcoins && Object.keys(prices.altcoins).length > 0) {
       const topGainers = Object.entries(prices.altcoins)
@@ -208,23 +202,21 @@ function generateSimpleAnalysis(prices, btcDominance) {
         altcoinInfo =
           "\n🚀 Top Gainers:\n" +
           topGainers
-            .map(
-              ([coin, data]) =>
-                `${coin}: $${data.usd?.toLocaleString() || 0} (+${data.change_24h.toFixed(2)}%)`
-            )
+            .map(([coin, data]) => {
+              const volume = data.volume_formatted || "N/A";
+              
+              return `${coin}: $${data.usd?.toLocaleString() || 0} (+${data.change_24h.toFixed(2)}%) (Vol: $${volume})`;
+            })
             .join("\n");
       }
     }
     
-    return `📊 Market Data Summary:
-💰 BTC: $${btcPrice.toLocaleString()} (${btcChange.toFixed(2)}%)
-💰 ETH: $${ethPrice.toLocaleString()} (${ethChange.toFixed(2)}%)
-📈 BTC Dominance: ${btcDominance?.toFixed(2) || 0}%${altcoinInfo}
+    return `📊 Market Summary:${altcoinInfo}
 
 ⚠️ AI analysis unavailable. Monitor price movements manually.`;
   } catch (error) {
     console.error("Error in generateSimpleAnalysis:", error);
-    return `📊 Market Data Summary:
+    return `📊 Market Summary:
 ⚠️ AI analysis unavailable. Basic data collection working.
 Check logs for detailed error information.`;
   }
