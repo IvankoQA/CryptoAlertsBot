@@ -19,14 +19,14 @@ async function getTopCoinsFromBinance() {
       .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
       .slice(0, config.TOP_COINS_LIMIT); // Top coins limit from config
 
-    // Get top gainers (positive 24h change)
+    // Get top gainers (all positive changes, let AI decide)
     const topGainers = usdtPairs
       .filter((ticker) => parseFloat(ticker.priceChangePercent) > 0)
       .sort(
         (a, b) =>
           parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent)
       )
-      .slice(0, config.TOP_GAINERS_LIMIT); // Top gainers limit from config
+      .slice(0, config.TOP_GAINERS_LIMIT); // Top gainers for AI analysis
 
     return {
       allPairs: usdtPairs,

@@ -82,7 +82,7 @@ async function getAIAdvice(prices, btcDominance, btcDominanceChange = 0) {
     }
   }
 
-  const prompt = `You are a professional crypto trader with 10+ years of experience. Analyze this market data:
+  const prompt = `You are a crypto trader. Analyze this data in SIMPLE terms:
 
 BTC: $${prices.bitcoin.usd} (${
     prices.bitcoin.change_24h?.toFixed(2) || "N/A"
@@ -90,20 +90,15 @@ BTC: $${prices.bitcoin.usd} (${
 ETH: $${prices.ethereum.usd} (${
     prices.ethereum.change_24h?.toFixed(2) || "N/A"
   }% 24h)
-BTC Dominance: ${btcDominance.toFixed(2)}% (${
-    btcDominanceChange > 0 ? "+" : ""
-  }${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
+BTC Dominance: ${btcDominance.toFixed(2)}%${altcoinInfo}
 
-Provide professional analysis:
-📉 Market Trend: Key support/resistance levels
-📊 BTC Dominance Analysis: Current ${btcDominance.toFixed(2)}% (${
-    btcDominanceChange > 0 ? "+" : ""
-  }${btcDominanceChange.toFixed(2)}% 24h) - when altseason likely?
-💰 Entry/Exit Strategy: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
-🚀 Altcoin Opportunities: Best short-term plays
+Write in SIMPLE language (max 1-2 sentences each):
+📉 Market: BTC going up/down? Key price?
+📊 BTC Dominance: Altcoins pump soon?
+💰 Strategy: Buy/sell prices (if clear opportunity)
+🚀 Altcoins: Pick the best coin with 5-15% gains (avoid 20%+ pumps like BIO). Which coin is starting to move?
 
-For BTC Dominance: Show current %, 24h change, and altseason timing (e.g., "57.52% (-2.1% 24h) - altseason in ~30 days if drops to 45%")
-Be concise, professional, give specific price levels.`;
+Be extremely brief. If no clear opportunity, say "No clear signals" or skip section.`;
 
   // Try OpenAI
   if (config.hasOpenAI) {

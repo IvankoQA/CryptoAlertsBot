@@ -35,7 +35,7 @@ const BTC_DOMINANCE_FALLBACK =
 const PRICE_ALERT_THRESHOLD =
   parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 3;
 const SCHEDULED_REPORT_MIN_CHANGE =
-  parseFloat(process.env.SCHEDULED_REPORT_MIN_CHANGE) || 1.0;
+  parseFloat(process.env.SCHEDULED_REPORT_MIN_CHANGE) || 2.0;
 const SCHEDULED_REPORT_HOURS = process.env.SCHEDULED_REPORT_HOURS
   ? process.env.SCHEDULED_REPORT_HOURS.split(",").map((h) => parseInt(h))
   : [8, 14, 17, 20, 23];
