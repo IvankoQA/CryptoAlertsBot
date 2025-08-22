@@ -132,6 +132,12 @@ async function main() {
     return;
   }
 
+  if (command === "webhook") {
+    console.log("🔗 Setting up Telegram webhook...");
+    await setupWebhook();
+    return;
+  }
+
   // Start HTTP server for Railway healthcheck
   startServer();
 

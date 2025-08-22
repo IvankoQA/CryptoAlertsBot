@@ -63,14 +63,10 @@ async function setupWebhook() {
     // Get the public URL from Railway
     const publicUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/webhook`
-      : null;
+      : "https://cryptoalertsbot-production.up.railway.app/webhook";
     
-    if (publicUrl) {
-      await telegramBot.setWebhook(publicUrl);
-      console.log("✅ Telegram webhook configured");
-    } else {
-      console.log("⚠️ No public URL available, webhook not configured");
-    }
+    await telegramBot.setWebhook(publicUrl);
+    console.log("✅ Telegram webhook configured:", publicUrl);
   } catch (err) {
     console.error("❌ Webhook setup failed:", err.message);
   }
