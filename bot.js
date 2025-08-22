@@ -4,7 +4,7 @@ const aiService = require("./services/ai");
 const telegramService = require("./services/telegram");
 const analysisUtils = require("./utils/analysis");
 const helpers = require("./utils/helpers");
-const { startServer } = require("./server");
+const { startServer, setupWebhook } = require("./server");
 
 // Store last prices for comparison
 let lastPrices = null;
@@ -125,8 +125,18 @@ async function main() {
     return;
   }
 
+  if (command === "telegram") {
+    console.log("🤖 Testing Telegram bot commands...");
+    const telegramBot = require("./services/telegramBot");
+    await telegramBot.sendWelcomeMessage();
+    return;
+  }
+
   // Start HTTP server for Railway healthcheck
   startServer();
+  
+  // Setup Telegram webhook
+  await setupWebhook();
 
   // First run
   if (helpers.shouldSendFullReport()) {
