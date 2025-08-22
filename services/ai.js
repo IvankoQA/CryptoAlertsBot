@@ -77,7 +77,7 @@ async function testHuggingFace() {
 }
 
 // ====== AI Analysis ======
-async function getAIAdvice(prices, btcDominance) {
+async function getAIAdvice(prices, btcDominance, btcDominanceChange = 0) {
   // Form altcoin data
   let altcoinInfo = "";
   if (prices.altcoins) {
@@ -102,14 +102,15 @@ async function getAIAdvice(prices, btcDominance) {
     prices.bitcoin.change_24h?.toFixed(2) || "N/A"
   }%), ETH $${prices.ethereum.usd} (${
     prices.ethereum.change_24h?.toFixed(2) || "N/A"
-  }%), BTC dominance ${btcDominance.toFixed(2)}%${altcoinInfo}
+  }%), BTC dominance ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
 
         Brief analysis:
         📉 Trend: Key levels
-        📊 BTC Dominance: Altseason timing
+        📊 BTC Dominance: Current ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h) - analyze altseason timing
         💰 Actions: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
         🚀 Altcoins: Top opportunities
 
+        For BTC Dominance: Show current %, 24h change, and when altseason likely (e.g., "57.52% (-2.1% 24h) - altseason in ~30 days if drops to 45%")
         Give specific price levels for entry/exit. Be concise, trader style.`;
 
   // Try OpenAI

@@ -139,14 +139,41 @@ async function getMarketDataFromCoinGecko() {
   }
 }
 
+// Store previous BTC dominance for comparison
+let previousBtcDominance = null;
+
 // ====== Get Market Data (with fallback) ======
 async function getMarketData() {
   try {
-    return await getMarketDataFromCoinGecko();
+    const data = await getMarketDataFromCoinGecko();
+    
+    // Calculate BTC dominance change
+    if (previousBtcDominance !== null) {
+      data.btcDominanceChange = ((data.btcDominance - previousBtcDominance) / previousBtcDominance) * 100;
+    } else {
+      data.btcDominanceChange = 0;
+    }
+    
+    // Update previous value
+    previousBtcDominance = data.btcDominance;
+    
+    return data;
   } catch (err) {
     // Fallback to Binance
     try {
-      return await getMarketDataFromBinance();
+      const data = await getMarketDataFromBinance();
+      
+      // Calculate BTC dominance change
+      if (previousBtcDominance !== null) {
+        data.btcDominanceChange = ((data.btcDominance - previousBtcDominance) / previousBtcDominance) * 100;
+      } else {
+        data.btcDominanceChange = 0;
+      }
+      
+      // Update previous value
+      previousBtcDominance = data.btcDominance;
+      
+      return data;
     } catch (err2) {
       throw new Error(`All APIs unavailable: ${err.message} | ${err2.message}`);
     }
