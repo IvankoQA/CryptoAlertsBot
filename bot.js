@@ -455,52 +455,30 @@ async function getGPTAdvice(prices, btcDominance) {
 }
 
 function generateSimpleAnalysis(prices, btcDominance) {
+  // Just pass raw data to AI - no calculations
+  const btcPrice = prices.bitcoin.usd;
+  const ethPrice = prices.ethereum.usd;
   const btcChange = prices.bitcoin.change_24h || 0;
   const ethChange = prices.ethereum.change_24h || 0;
   
-  let trend = "";
-  if (btcChange > 2) trend = "📈 Strong uptrend";
-  else if (btcChange > 0) trend = "📊 Slight uptrend";
-  else if (btcChange > -2) trend = "📉 Slight downtrend";
-  else trend = "📉 Strong downtrend";
-  
-  let dominance = "";
-  if (btcDominance > 55) dominance = "High BTC dominance - altseason unlikely";
-  else if (btcDominance > 50) dominance = "Moderate BTC dominance";
-  else dominance = "Low BTC dominance - potential altseason";
-  
-  let recommendation = "";
-  if (btcChange < -5) {
-    recommendation = "Consider buying the dip";
-  } else if (btcChange > 5) {
-    recommendation = "Consider taking profits";
-  } else {
-    recommendation = "Hold current positions";
-  }
-  
-  // Add top gainers info
+  // Get top gainers data
   let altcoinInfo = "";
   if (prices.altcoins && Object.keys(prices.altcoins).length > 0) {
     const topGainers = Object.entries(prices.altcoins)
       .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
       .slice(0, 5);
     
-    altcoinInfo =
-      "\n🚀 Top Gainers:\n" +
-      topGainers
-        .map(
-          ([coin, data]) =>
-            `${coin}: +${data.change_24h.toFixed(
-              2
-            )}% ($${data.usd.toLocaleString()})`
-        )
-        .join("\n");
+    altcoinInfo = "\nAltcoins: " + topGainers
+      .map(([coin, data]) => `${coin}: $${data.usd} (+${data.change_24h.toFixed(2)}%)`)
+      .join(", ");
   }
   
-  return `🤖 Market Analysis (Simple):
-📉 Trend: ${trend} (BTC: ${btcChange.toFixed(2)}%, ETH: ${ethChange.toFixed(2)}%)
-📊 BTC Dominance: ${dominance} (${btcDominance.toFixed(2)}%)
-💰 Recommendation: ${recommendation}${altcoinInfo}`;
+  return `🤖 Market Data for AI Analysis:
+BTC: $${btcPrice} (${btcChange.toFixed(2)}%)
+ETH: $${ethPrice} (${ethChange.toFixed(2)}%)
+BTC Dominance: ${btcDominance.toFixed(2)}%${altcoinInfo}
+
+Please provide trading analysis with entry/exit prices.`;
 }
 
 // ====== Create Report ======
