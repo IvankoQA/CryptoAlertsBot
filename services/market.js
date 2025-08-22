@@ -13,9 +13,9 @@ async function getTopCoinsFromBinance() {
     // Filter USDT pairs and sort by volume
     const usdtPairs = allTickers
       .filter((ticker) => ticker.symbol.endsWith("USDT"))
-      .filter((ticker) => parseFloat(ticker.quoteVolume) > 1000000) // Min $1M volume
+      .filter((ticker) => parseFloat(ticker.quoteVolume) > config.MIN_VOLUME_USD) // Min volume from config
       .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
-      .slice(0, 100); // Top 100 by volume
+      .slice(0, config.TOP_COINS_LIMIT); // Top coins limit from config
 
     // Get top gainers (positive 24h change)
     const topGainers = usdtPairs
@@ -24,7 +24,7 @@ async function getTopCoinsFromBinance() {
         (a, b) =>
           parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent)
       )
-      .slice(0, 10); // Top 10 gainers
+      .slice(0, config.TOP_GAINERS_LIMIT); // Top gainers limit from config
 
     return {
       allPairs: usdtPairs,
@@ -74,7 +74,7 @@ async function getMarketDataFromBinance() {
         usd: parseFloat(ticker.lastPrice),
         change_24h: change24h,
         volume: volume,
-        volume_formatted: (volume / 1000000).toFixed(1) + "M" // Volume in millions
+        volume_formatted: (volume / 1000000).toFixed(1) + "M" // Volume in millions (hardcoded for display format)
       };
     });
 

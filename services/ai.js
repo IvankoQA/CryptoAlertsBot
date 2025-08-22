@@ -16,7 +16,7 @@ async function testOpenAI() {
     await openai.chat.completions.create({
       model: "gpt-3.5-turbo-0125", // Cheaper model
       messages: [{ role: "user", content: "Test" }],
-      max_tokens: 5,
+      max_tokens: config.AI_TEST_TOKENS,
     });
     return true;
   } catch (err) {
@@ -40,13 +40,13 @@ async function testGemini() {
 async function testDeepSeek() {
   if (!config.hasDeepSeek) return false;
   try {
-    await axios.post(
-      "https://api.deepseek.com/v1/chat/completions",
-      {
-        model: "deepseek-chat",
-        messages: [{ role: "user", content: "Test" }],
-        max_tokens: 5,
-      },
+          await axios.post(
+        "https://api.deepseek.com/v1/chat/completions",
+        {
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: "Test" }],
+          max_tokens: config.AI_TEST_TOKENS,
+        },
       {
         headers: {
           Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
@@ -67,7 +67,7 @@ async function testHuggingFace() {
     await hf.textGeneration({
       model: "gpt2",
       inputs: "Test",
-      parameters: { max_new_tokens: 5 },
+      parameters: { max_new_tokens: config.AI_TEST_TOKENS },
     });
     return true;
   } catch (err) {
@@ -132,10 +132,12 @@ Be concise, professional, give specific price levels.`;
             },
           ],
           temperature: 0.3,
-          max_tokens: 150,
+          // No token limit
         });
 
         if (response.choices?.[0]?.message?.content) {
+          const usage = response.usage;
+          console.log(`📊 OpenAI tokens used: ${usage?.prompt_tokens || 'N/A'} prompt, ${usage?.completion_tokens || 'N/A'} completion, ${usage?.total_tokens || 'N/A'} total`);
           return `🤖 AI Analysis (GPT-3.5):\n${response.choices[0].message.content}`;
         }
       }
@@ -151,6 +153,7 @@ Be concise, professional, give specific price levels.`;
       if (isGeminiAvailable) {
         const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(prompt);
+        console.log(`📊 Gemini tokens used: ${result.response.usageMetadata?.promptTokenCount || 'N/A'} prompt, ${result.response.usageMetadata?.candidatesTokenCount || 'N/A'} completion`);
         return `🤖 AI Analysis (Gemini):\n${result.response.text()}`;
       }
     } catch (err) {
@@ -168,7 +171,7 @@ Be concise, professional, give specific price levels.`;
           {
             model: "deepseek-chat",
             messages: [{ role: "user", content: prompt }],
-            max_tokens: 200,
+            // No token limit
           },
           {
             headers: {
@@ -177,6 +180,8 @@ Be concise, professional, give specific price levels.`;
             },
           }
         );
+        const usage = response.data.usage;
+        console.log(`📊 DeepSeek tokens used: ${usage?.prompt_tokens || 'N/A'} prompt, ${usage?.completion_tokens || 'N/A'} completion, ${usage?.total_tokens || 'N/A'} total`);
         return `🤖 AI Analysis (DeepSeek):\n${response.data.choices[0].message.content}`;
       }
     } catch (err) {
@@ -197,7 +202,7 @@ function generateSimpleAnalysis(prices, btcDominance) {
       const topGainers = Object.entries(prices.altcoins)
         .filter(([_, data]) => data && typeof data.change_24h === 'number')
         .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
-        .slice(0, 5);
+        .slice(0, config.TOP_GAINERS_LIMIT);
       
       if (topGainers.length > 0) {
         altcoinInfo =
