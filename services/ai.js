@@ -189,35 +189,45 @@ async function getAIAdvice(prices, btcDominance) {
 }
 
 function generateSimpleAnalysis(prices, btcDominance) {
-  // Just pass raw data to AI - no calculations
-  const btcPrice = prices.bitcoin.usd;
-  const ethPrice = prices.ethereum.usd;
-  const btcChange = prices.bitcoin.change_24h || 0;
-  const ethChange = prices.ethereum.change_24h || 0;
-  
-  // Get top gainers data
-  let altcoinInfo = "";
-  if (prices.altcoins && Object.keys(prices.altcoins).length > 0) {
-    const topGainers = Object.entries(prices.altcoins)
-      .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
-      .slice(0, 5);
+  try {
+    // Safe data extraction with fallbacks
+    const btcPrice = prices?.bitcoin?.usd || 0;
+    const ethPrice = prices?.ethereum?.usd || 0;
+    const btcChange = prices?.bitcoin?.change_24h || 0;
+    const ethChange = prices?.ethereum?.change_24h || 0;
     
-    altcoinInfo =
-      "\nAltcoins: " +
-      topGainers
-        .map(
-          ([coin, data]) =>
-            `${coin}: $${data.usd} (+${data.change_24h.toFixed(2)}%)`
-        )
-        .join(", ");
-  }
-  
-  return `🤖 Market Data for AI Analysis:
-BTC: $${btcPrice} (${btcChange.toFixed(2)}%)
-ETH: $${ethPrice} (${ethChange.toFixed(2)}%)
-BTC Dominance: ${btcDominance.toFixed(2)}%${altcoinInfo}
+    // Get top gainers data safely
+    let altcoinInfo = "";
+    if (prices?.altcoins && Object.keys(prices.altcoins).length > 0) {
+      const topGainers = Object.entries(prices.altcoins)
+        .filter(([_, data]) => data && typeof data.change_24h === 'number')
+        .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
+        .slice(0, 5);
+      
+      if (topGainers.length > 0) {
+        altcoinInfo =
+          "\n🚀 Top Gainers:\n" +
+          topGainers
+            .map(
+              ([coin, data]) =>
+                `${coin}: $${data.usd?.toLocaleString() || 0} (+${data.change_24h.toFixed(2)}%)`
+            )
+            .join("\n");
+      }
+    }
+    
+    return `📊 Market Data Summary:
+💰 BTC: $${btcPrice.toLocaleString()} (${btcChange.toFixed(2)}%)
+💰 ETH: $${ethPrice.toLocaleString()} (${ethChange.toFixed(2)}%)
+📈 BTC Dominance: ${btcDominance?.toFixed(2) || 0}%${altcoinInfo}
 
-Please provide trading analysis with entry/exit prices.`;
+⚠️ AI analysis unavailable. Monitor price movements manually.`;
+  } catch (error) {
+    console.error("Error in generateSimpleAnalysis:", error);
+    return `📊 Market Data Summary:
+⚠️ AI analysis unavailable. Basic data collection working.
+Check logs for detailed error information.`;
+  }
 }
 
 module.exports = {

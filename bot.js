@@ -16,20 +16,33 @@ async function createReport(isScheduled = false) {
 
     let message = "🚀 *Crypto Report*\n\n";
 
-    // Main coins info
+    // Main coins info - safely
     config.COINS.forEach((coin) => {
       const p = prices[coin];
-      message += `*${coin.toUpperCase()}*: $${p.usd.toLocaleString()}\n24h: ${p.change_24h.toFixed(
-        2
-      )}% (min: $${p.usd_24h_low.toLocaleString()}, max: $${p.usd_24h_high.toLocaleString()})\n\n`;
+      if (p && p.usd) {
+        const change24h = p.change_24h?.toFixed(2) || "0.00";
+        const low24h = p.usd_24h_low?.toLocaleString() || "N/A";
+        const high24h = p.usd_24h_high?.toLocaleString() || "N/A";
+        
+        message += `*${coin.toUpperCase()}*: $${p.usd.toLocaleString()}\n24h: ${change24h}% (min: $${low24h}, max: $${high24h})\n\n`;
+      } else {
+        message += `*${coin.toUpperCase()}*: Data unavailable\n\n`;
+      }
     });
 
-    message += `📈 BTC dominance: ${btcDominance.toFixed(2)}%\n\n`;
+    const dominance = btcDominance?.toFixed(2) || "0.00";
+    message += `📈 BTC dominance: ${dominance}%\n\n`;
 
     // Add AI analysis only for scheduled reports
     if (isScheduled) {
-      const advice = await aiService.getAIAdvice(prices, btcDominance);
-      message += advice;
+      try {
+        const advice = await aiService.getAIAdvice(prices, btcDominance);
+        message += advice;
+      } catch (aiError) {
+        console.log("⚠️ AI analysis failed, using simple summary");
+        const simpleAnalysis = aiService.generateSimpleAnalysis(prices, btcDominance);
+        message += simpleAnalysis;
+      }
     } else {
       // For price alerts, add simple analysis
       const simpleAnalysis = aiService.generateSimpleAnalysis(prices, btcDominance);
@@ -38,6 +51,7 @@ async function createReport(isScheduled = false) {
 
     await telegramService.sendMessage(message);
   } catch (error) {
+    console.error("❌ Report creation failed:", error);
     const errorMessage = `❌ *Error*\n\n${error.message}\n\nTry again later.`;
     await telegramService.sendMessage(errorMessage);
   }
