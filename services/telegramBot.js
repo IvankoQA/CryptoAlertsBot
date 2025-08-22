@@ -48,14 +48,11 @@ async function handleCommand(command, chatId) {
       case "/report":
         await sendReport(chatId);
         break;
-      case "/status":
-        await sendStatus(chatId);
-        break;
-      case "/help":
-        await sendHelp(chatId);
+      case "/prices":
+        await sendPricesOnly(chatId);
         break;
       default:
-        await telegramService.sendMessage("❌ Unknown command. Use /help for command list.");
+        await telegramService.sendMessage("❌ Unknown command. Use /report or /prices to get data.");
     }
   } catch (err) {
     console.error("Command handling failed:", err.message);
@@ -68,21 +65,14 @@ async function handleCallbackQuery(callbackQuery) {
   try {
     const { id, data } = callbackQuery;
     
-    switch (data) {
-      case "report":
-        await telegramService.answerCallbackQuery(id, "📊 Generating report...");
-        await sendReport();
-        break;
-      case "status":
-        await telegramService.answerCallbackQuery(id, "🔍 Checking status...");
-        await sendStatus();
-        break;
-      case "help":
-        await telegramService.answerCallbackQuery(id, "📖 Showing help...");
-        await sendHelp();
-        break;
-      default:
-        await telegramService.answerCallbackQuery(id, "❌ Unknown command");
+    if (data === "report") {
+      await telegramService.answerCallbackQuery(id, "📊 Generating full report...");
+      await sendReport();
+    } else if (data === "prices") {
+      await telegramService.answerCallbackQuery(id, "📈 Getting prices...");
+      await sendPricesOnly();
+    } else {
+      await telegramService.answerCallbackQuery(id, "❌ Unknown command");
     }
   } catch (err) {
     console.error("Callback query handling failed:", err.message);
@@ -97,19 +87,15 @@ async function sendWelcomeMessage(chatId = config.CHAT_ID) {
 I monitor cryptocurrency prices and send notifications about important changes.
 
 *Available commands:*
-📊 /report - Get report now
-🔍 /status - Check services status
-📖 /help - Show help
+📊 /report - Get full report with AI
+📈 /prices - Get prices only
 
 *Or use buttons below:*`;
 
   const keyboard = [
     [
-      { text: "📊 Report", callback_data: "report" },
-      { text: "🔍 Status", callback_data: "status" }
-    ],
-    [
-      { text: "📖 Help", callback_data: "help" }
+      { text: "📊 Full Report", callback_data: "report" },
+      { text: "📈 Prices Only", callback_data: "prices" }
     ]
   ];
 
@@ -157,6 +143,56 @@ async function sendReport(chatId = config.CHAT_ID) {
   } catch (err) {
     console.error("Report generation failed:", err.message);
     await telegramService.sendMessage("❌ *Report generation error*\n\nTry again later.");
+  }
+}
+
+// ====== Send Prices Only ======
+async function sendPricesOnly(chatId = config.CHAT_ID) {
+  try {
+    await telegramService.sendMessage("📈 *Getting prices...*");
+    
+    const { prices, btcDominance } = await marketService.getMarketData();
+    let message = "💰 *Current Prices*\n\n";
+    
+    config.COINS.forEach((coin) => {
+      const p = prices[coin];
+      if (p && p.usd) {
+        const change24h = typeof p.change_24h === "number" ? p.change_24h.toFixed(2) : "N/A";
+        const change7d = typeof p.change_7d === "number" ? p.change_7d.toFixed(2) : "";
+        const low24h = p.usd_24h_low?.toLocaleString() || "N/A";
+        const high24h = p.usd_24h_high?.toLocaleString() || "N/A";
+
+        message += `*${coin.toUpperCase()}*\n`;
+        message += `💰 Current: $${p.usd.toLocaleString()}\n`;
+        message += `📊 24h: ${change24h}%${change7d ? ` (7d: ${change7d}%)` : ''}\n`;
+        message += `📉 Min: $${low24h}\n`;
+        message += `📈 Max: $${high24h}\n\n`;
+      } else {
+        message += `*${coin.toUpperCase()}*: Data unavailable\n\n`;
+      }
+    });
+    
+    const dominance = btcDominance?.toFixed(2) || "N/A";
+    message += `📈 BTC Dominance: ${dominance}%\n\n`;
+    
+    // Add top gainers without AI analysis
+    if (prices.altcoins) {
+      const topGainers = Object.entries(prices.altcoins)
+        .sort(([,a], [,b]) => b.change_24h - a.change_24h)
+        .slice(0, 5);
+      
+      if (topGainers.length > 0) {
+        message += `🚀 *Top Gainers:*\n`;
+        topGainers.forEach(([coin, data]) => {
+          message += `${coin}: $${data.usd.toFixed(4)} (+${data.change_24h.toFixed(2)}%) (Vol: $${data.volume_formatted})\n`;
+        });
+      }
+    }
+    
+    await telegramService.sendMessage(message);
+  } catch (err) {
+    console.error("Prices generation failed:", err.message);
+    await telegramService.sendMessage("❌ *Prices generation error*\n\nTry again later.");
   }
 }
 
@@ -238,6 +274,7 @@ module.exports = {
   processUpdate,
   sendWelcomeMessage,
   sendReport,
+  sendPricesOnly,
   sendStatus,
   sendHelp
 };
