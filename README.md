@@ -36,27 +36,30 @@ crypto_bot/
 ### Local Development
 
 1. **Clone repository**
+
    ```bash
    git clone <repository-url>
    cd crypto_bot
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Create .env file**
+
    ```env
    # Required
    TG_BOT_TOKEN=your_telegram_bot_token
    TG_CHAT_ID=your_telegram_chat_id
-   
+
    # AI Services (at least one required)
    OPENAI_API_KEY=your_openai_key
    GEMINI_API_KEY=your_gemini_key
    DEEPSEEK_API_KEY=your_deepseek_key
-   
+
    # Optional Configuration
    CHECK_INTERVAL_MIN=15
    PRICE_ALERT_THRESHOLD=5
@@ -73,10 +76,12 @@ crypto_bot/
 ### Railway Deployment
 
 1. **Connect to Railway**
+
    - Link your GitHub repository
    - Railway will auto-deploy
 
 2. **Set Environment Variables**
+
    - Add all variables from `.env` to Railway dashboard
 
 3. **Monitor**
@@ -94,16 +99,24 @@ node bot.js report       # Send immediate report
 
 ## 🔧 Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CHECK_INTERVAL_MIN` | 15 | Minutes between price checks |
-| `PRICE_ALERT_THRESHOLD` | 5 | % change for price alerts |
-| `MAIN_COINS` | bitcoin,ethereum | Main coins to monitor |
-| `FULL_REPORT_HOURS` | 8,18,22 | Hours for full AI reports |
+| Variable                 | Default          | Description                    |
+| ------------------------ | ---------------- | ------------------------------ |
+| `CHECK_INTERVAL_MIN`     | 15               | Minutes between price checks   |
+| `PRICE_ALERT_THRESHOLD`  | 5                | % change for price alerts      |
+| `SCHEDULED_REPORT_HOURS` | 8,16,22          | Hours for scheduled reports    |
+| `MAIN_COINS`             | bitcoin,ethereum | Main coins to monitor          |
+| `FULL_REPORT_HOURS`      | 8,18,22          | Hours for full AI reports      |
+| `BTC_DOMINANCE_FALLBACK` | 50.0             | Fallback BTC dominance %       |
+| `MIN_VOLUME_USD`         | 1000000          | Minimum volume for altcoins    |
+| `TOP_COINS_LIMIT`        | 100              | Number of top coins to monitor |
+| `TOP_GAINERS_LIMIT`      | 5                | Number of top gainers to show  |
+| `AI_MAX_TOKENS`          | 2000             | Max tokens for AI responses    |
+| `AI_TEST_TOKENS`         | 50               | Tokens for AI service tests    |
 
 ## 📱 Telegram Messages
 
 ### Scheduled Reports (8:00, 16:00, 22:00)
+
 ```
 🚀 Crypto Report
 
@@ -123,6 +136,7 @@ ETHEREUM: $4,247
 ```
 
 ### Price Alerts (every 15 min)
+
 ```
 🚨 PRICE ALERT!
 
@@ -143,8 +157,9 @@ Previous: $4,250
 ## 🔄 Updates
 
 The bot automatically:
+
 - Monitors top 100 coins by volume
-- Finds top 10 gainers for opportunities
+- Finds top 5 gainers for opportunities
 - Sends alerts for significant price changes
 - Provides AI analysis when available
 

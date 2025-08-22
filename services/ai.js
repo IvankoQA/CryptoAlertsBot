@@ -40,13 +40,13 @@ async function testGemini() {
 async function testDeepSeek() {
   if (!config.hasDeepSeek) return false;
   try {
-          await axios.post(
-        "https://api.deepseek.com/v1/chat/completions",
-        {
-          model: "deepseek-chat",
-          messages: [{ role: "user", content: "Test" }],
-          max_tokens: config.AI_TEST_TOKENS,
-        },
+    await axios.post(
+      "https://api.deepseek.com/v1/chat/completions",
+      {
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: "Test" }],
+        max_tokens: config.AI_TEST_TOKENS,
+      },
       {
         headers: {
           Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
@@ -100,13 +100,21 @@ async function getAIAdvice(prices, btcDominance, btcDominanceChange = 0) {
 
   const prompt = `You are a professional crypto trader with 10+ years of experience. Analyze this market data:
 
-BTC: $${prices.bitcoin.usd} (${prices.bitcoin.change_24h?.toFixed(2) || "N/A"}% 24h)
-ETH: $${prices.ethereum.usd} (${prices.ethereum.change_24h?.toFixed(2) || "N/A"}% 24h)
-BTC Dominance: ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
+BTC: $${prices.bitcoin.usd} (${
+    prices.bitcoin.change_24h?.toFixed(2) || "N/A"
+  }% 24h)
+ETH: $${prices.ethereum.usd} (${
+    prices.ethereum.change_24h?.toFixed(2) || "N/A"
+  }% 24h)
+BTC Dominance: ${btcDominance.toFixed(2)}% (${
+    btcDominanceChange > 0 ? "+" : ""
+  }${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
 
 Provide professional analysis:
 📉 Market Trend: Key support/resistance levels
-📊 BTC Dominance Analysis: Current ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h) - when altseason likely?
+📊 BTC Dominance Analysis: Current ${btcDominance.toFixed(2)}% (${
+    btcDominanceChange > 0 ? "+" : ""
+  }${btcDominanceChange.toFixed(2)}% 24h) - when altseason likely?
 💰 Entry/Exit Strategy: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
 🚀 Altcoin Opportunities: Best short-term plays
 
@@ -137,7 +145,11 @@ Be concise, professional, give specific price levels.`;
 
         if (response.choices?.[0]?.message?.content) {
           const usage = response.usage;
-          console.log(`📊 OpenAI tokens used: ${usage?.prompt_tokens || 'N/A'} prompt, ${usage?.completion_tokens || 'N/A'} completion, ${usage?.total_tokens || 'N/A'} total`);
+          console.log(
+            `📊 OpenAI tokens used: ${usage?.prompt_tokens || "N/A"} prompt, ${
+              usage?.completion_tokens || "N/A"
+            } completion, ${usage?.total_tokens || "N/A"} total`
+          );
           return `🤖 AI Analysis (GPT-3.5):\n${response.choices[0].message.content}`;
         }
       }
@@ -153,7 +165,13 @@ Be concise, professional, give specific price levels.`;
       if (isGeminiAvailable) {
         const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(prompt);
-        console.log(`📊 Gemini tokens used: ${result.response.usageMetadata?.promptTokenCount || 'N/A'} prompt, ${result.response.usageMetadata?.candidatesTokenCount || 'N/A'} completion`);
+        console.log(
+          `📊 Gemini tokens used: ${
+            result.response.usageMetadata?.promptTokenCount || "N/A"
+          } prompt, ${
+            result.response.usageMetadata?.candidatesTokenCount || "N/A"
+          } completion`
+        );
         return `🤖 AI Analysis (Gemini):\n${result.response.text()}`;
       }
     } catch (err) {
@@ -181,7 +199,11 @@ Be concise, professional, give specific price levels.`;
           }
         );
         const usage = response.data.usage;
-        console.log(`📊 DeepSeek tokens used: ${usage?.prompt_tokens || 'N/A'} prompt, ${usage?.completion_tokens || 'N/A'} completion, ${usage?.total_tokens || 'N/A'} total`);
+        console.log(
+          `📊 DeepSeek tokens used: ${usage?.prompt_tokens || "N/A"} prompt, ${
+            usage?.completion_tokens || "N/A"
+          } completion, ${usage?.total_tokens || "N/A"} total`
+        );
         return `🤖 AI Analysis (DeepSeek):\n${response.data.choices[0].message.content}`;
       }
     } catch (err) {
@@ -200,23 +222,25 @@ function generateSimpleAnalysis(prices, btcDominance) {
     let altcoinInfo = "";
     if (prices?.altcoins && Object.keys(prices.altcoins).length > 0) {
       const topGainers = Object.entries(prices.altcoins)
-        .filter(([_, data]) => data && typeof data.change_24h === 'number')
+        .filter(([_, data]) => data && typeof data.change_24h === "number")
         .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
         .slice(0, config.TOP_GAINERS_LIMIT);
-      
+
       if (topGainers.length > 0) {
         altcoinInfo =
           "\n🚀 Top Gainers:\n" +
           topGainers
             .map(([coin, data]) => {
               const volume = data.volume_formatted || "N/A";
-              
-              return `${coin}: $${data.usd?.toLocaleString() || 0} (+${data.change_24h.toFixed(2)}%) (Vol: $${volume})`;
+
+              return `${coin}: $${
+                data.usd?.toLocaleString() || 0
+              } (+${data.change_24h.toFixed(2)}%) (Vol: $${volume})`;
             })
             .join("\n");
       }
     }
-    
+
     return `📊 Market Summary:${altcoinInfo}
 
 ⚠️ AI analysis unavailable. Monitor price movements manually.`;
@@ -234,5 +258,5 @@ module.exports = {
   testDeepSeek,
   testHuggingFace,
   getAIAdvice,
-  generateSimpleAnalysis
+  generateSimpleAnalysis,
 };

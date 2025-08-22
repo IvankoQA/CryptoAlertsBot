@@ -26,7 +26,7 @@ const AI_TEST_TOKENS = parseInt(process.env.AI_TEST_TOKENS) || 50;
 // Timing configuration
 const CHECK_INTERVAL_MIN = parseInt(process.env.CHECK_INTERVAL_MIN) || 15;
 const FULL_REPORT_HOURS = process.env.FULL_REPORT_HOURS
-  ? process.env.FULL_REPORT_HOURS.split(",").map(h => parseInt(h))
+  ? process.env.FULL_REPORT_HOURS.split(",").map((h) => parseInt(h))
   : [8, 18, 22];
 
 // Market configuration
@@ -34,18 +34,20 @@ const COINS = process.env.MAIN_COINS
   ? process.env.MAIN_COINS.split(",")
   : ["bitcoin", "ethereum"];
 const ALTCOINS = process.env.ALTCOINS ? process.env.ALTCOINS.split(",") : [];
-const BTC_DOMINANCE_FALLBACK = parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 50.0;
+const BTC_DOMINANCE_FALLBACK =
+  parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 50.0;
 
 // Price alert thresholds
-const PRICE_ALERT_THRESHOLD = parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 5;
+const PRICE_ALERT_THRESHOLD =
+  parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 5;
 const SCHEDULED_REPORT_HOURS = process.env.SCHEDULED_REPORT_HOURS
-  ? process.env.SCHEDULED_REPORT_HOURS.split(",").map(h => parseInt(h))
+  ? process.env.SCHEDULED_REPORT_HOURS.split(",").map((h) => parseInt(h))
   : [8, 16, 22];
 
 // Market data limits
 const MIN_VOLUME_USD = parseFloat(process.env.MIN_VOLUME_USD) || 1000000;
 const TOP_COINS_LIMIT = parseInt(process.env.TOP_COINS_LIMIT) || 100;
-const TOP_GAINERS_LIMIT = parseInt(process.env.TOP_GAINERS_LIMIT) || 10;
+const TOP_GAINERS_LIMIT = parseInt(process.env.TOP_GAINERS_LIMIT) || 5;
 
 // Server configuration
 const PORT = process.env.PORT || 3000;
@@ -69,5 +71,5 @@ module.exports = {
   MIN_VOLUME_USD,
   TOP_COINS_LIMIT,
   TOP_GAINERS_LIMIT,
-  PORT
+  PORT,
 };
