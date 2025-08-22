@@ -17,7 +17,7 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Проверяем наличие хотя бы одного AI API
+// Check for at least one AI API
 const hasOpenAI = !!process.env.OPENAI_API_KEY;
 const hasGemini = !!process.env.GEMINI_API_KEY;
 const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
@@ -47,12 +47,12 @@ const ALTCOINS = process.env.ALTCOINS
 const BTC_DOMINANCE_FALLBACK =
   parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 52.5; // Fallback BTC dominance value
 
-// ====== AI сервисы ======
+// ====== AI Services ======
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
-// ====== Функция отправки сообщений ======
+// ====== Message Sending Function ======
 async function sendMessage(text) {
   try {
     const response = await axios.post(
@@ -70,7 +70,7 @@ async function sendMessage(text) {
   }
 }
 
-// ====== Получение данных с Binance ======
+// ====== Get Data from Binance ======
 async function getMarketDataFromBinance() {
   try {
     const altcoins = ALTCOINS;
@@ -154,7 +154,7 @@ async function getMarketDataFromBinance() {
   }
 }
 
-// ====== Получение данных с CoinGecko ======
+// ====== Get Data from CoinGecko ======
 async function getMarketDataFromCoinGecko() {
   try {
     // Get base prices and detailed data
@@ -193,7 +193,7 @@ async function getMarketDataFromCoinGecko() {
   }
 }
 
-// ====== Получение данных рынка (с fallback) ======
+// ====== Get Market Data (with fallback) ======
 async function getMarketData() {
   try {
     return await getMarketDataFromCoinGecko();
@@ -207,17 +207,18 @@ async function getMarketData() {
   }
 }
 
-// ====== Проверка AI API ======
+// ====== AI API Check ======
 async function testOpenAI() {
   if (!hasOpenAI) return false;
   try {
     await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-0125", // Более дешевая модель
+      model: "gpt-3.5-turbo-0125", // Cheaper model
       messages: [{ role: "user", content: "Test" }],
       max_tokens: 5,
     });
     return true;
   } catch (err) {
+    console.log("OpenAI test error:", err.message);
     return false;
   }
 }
@@ -229,6 +230,7 @@ async function testGemini() {
     await model.generateContent("Test");
     return true;
   } catch (err) {
+    console.log("Gemini test error:", err.message);
     return false;
   }
 }
@@ -252,6 +254,7 @@ async function testDeepSeek() {
     );
     return true;
   } catch (err) {
+    console.log("DeepSeek test error:", err.message);
     return false;
   }
 }
@@ -271,7 +274,7 @@ async function testHuggingFace() {
   }
 }
 
-// ====== AI анализ ======
+// ====== AI Analysis ======
 async function getGPTAdvice(prices, btcDominance) {
   // Form altcoin data
   let altcoinInfo = "";
@@ -331,7 +334,7 @@ RULES:
       const isOpenAIAvailable = await testOpenAI();
       if (isOpenAIAvailable) {
         const response = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo-0125", // Более дешевая модель
+          model: "gpt-3.5-turbo-0125", // Cheaper model
           messages: [
             {
               role: "system",
@@ -396,9 +399,35 @@ RULES:
     }
   }
 
+  // Fallback: Simple analysis without AI
+  return generateSimpleAnalysis(prices, btcDominance);
+}
 
-
-  throw new Error("AI services unavailable. Check API keys and limits.");
+function generateSimpleAnalysis(prices, btcDominance) {
+  const btcChange = prices.bitcoin.change_24h || 0;
+  const ethChange = prices.ethereum.change_24h || 0;
+  
+  let trend = "";
+  if (btcChange > 2) trend = "📈 Strong uptrend";
+  else if (btcChange > 0) trend = "📊 Slight uptrend";
+  else if (btcChange > -2) trend = "📉 Slight downtrend";
+  else trend = "📉 Strong downtrend";
+  
+  let dominance = "";
+  if (btcDominance > 55) dominance = "High BTC dominance - altseason unlikely";
+  else if (btcDominance > 50) dominance = "Moderate BTC dominance";
+  else dominance = "Low BTC dominance - potential altseason";
+  
+  let recommendation = "";
+  if (btcChange < -5) recommendation = "Consider buying the dip";
+  else if (btcChange > 5) recommendation = "Consider taking profits";
+  else recommendation = "Hold current positions";
+  
+  return `🤖 Market Analysis (Simple):
+📉 Trend: ${trend} (BTC: ${btcChange.toFixed(2)}%, ETH: ${ethChange.toFixed(2)}%)
+📊 BTC Dominance: ${dominance} (${btcDominance.toFixed(2)}%)
+💰 Recommendation: ${recommendation}
+🚀 Altcoins: Monitor for opportunities when BTC stabilizes`;
 }
 
 // ====== Формируем отчет ======
@@ -478,7 +507,9 @@ async function checkStatus() {
     `  DeepSeek: ${isDeepSeekAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
   console.log(
-    `  HuggingFace: ${isHuggingFaceAvailable ? "✅ Available" : "❌ Unavailable"}`
+    `  HuggingFace: ${
+      isHuggingFaceAvailable ? "✅ Available" : "❌ Unavailable"
+    }`
   );
 
   // Data APIs check
