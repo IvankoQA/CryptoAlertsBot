@@ -98,20 +98,20 @@ async function getAIAdvice(prices, btcDominance, btcDominanceChange = 0) {
     }
   }
 
-  const prompt = `Crypto trader analysis. Data: BTC $${prices.bitcoin.usd} (${
-    prices.bitcoin.change_24h?.toFixed(2) || "N/A"
-  }%), ETH $${prices.ethereum.usd} (${
-    prices.ethereum.change_24h?.toFixed(2) || "N/A"
-  }%), BTC dominance ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
+  const prompt = `You are a professional crypto trader with 10+ years of experience. Analyze this market data:
 
-        Brief analysis:
-        📉 Trend: Key levels
-        📊 BTC Dominance: Current ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h) - analyze altseason timing
-        💰 Actions: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
-        🚀 Altcoins: Top opportunities
+BTC: $${prices.bitcoin.usd} (${prices.bitcoin.change_24h?.toFixed(2) || "N/A"}% 24h)
+ETH: $${prices.ethereum.usd} (${prices.ethereum.change_24h?.toFixed(2) || "N/A"}% 24h)
+BTC Dominance: ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h)${altcoinInfo}
 
-        For BTC Dominance: Show current %, 24h change, and when altseason likely (e.g., "57.52% (-2.1% 24h) - altseason in ~30 days if drops to 45%")
-        Give specific price levels for entry/exit. Be concise, trader style.`;
+Provide professional analysis:
+📉 Market Trend: Key support/resistance levels
+📊 BTC Dominance Analysis: Current ${btcDominance.toFixed(2)}% (${btcDominanceChange > 0 ? '+' : ''}${btcDominanceChange.toFixed(2)}% 24h) - when altseason likely?
+💰 Entry/Exit Strategy: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
+🚀 Altcoin Opportunities: Best short-term plays
+
+For BTC Dominance: Show current %, 24h change, and altseason timing (e.g., "57.52% (-2.1% 24h) - altseason in ~30 days if drops to 45%")
+Be concise, professional, give specific price levels.`;
 
   // Try OpenAI
   if (config.hasOpenAI) {

@@ -12,7 +12,8 @@ let lastPrices = null;
 // ====== Create Report ======
 async function createReport(isScheduled = false) {
   try {
-    const { prices, btcDominance, btcDominanceChange } = await marketService.getMarketData();
+    const { prices, btcDominance, btcDominanceChange } =
+      await marketService.getMarketData();
 
     let message = "🚀 *Crypto Report*\n\n";
 
@@ -35,15 +36,21 @@ async function createReport(isScheduled = false) {
     });
 
     const dominance = btcDominance?.toFixed(2) || "0.00";
-    const dominanceChange = btcDominanceChange ? (btcDominanceChange > 0 ? '+' : '') + btcDominanceChange.toFixed(2) : "0.00";
+    const dominanceChange = btcDominanceChange
+      ? (btcDominanceChange > 0 ? "+" : "") + btcDominanceChange.toFixed(2)
+      : "0.00";
     message += `📈 BTC Dominance: ${dominance}% (${dominanceChange}% 24h)\n\n`;
 
     // Add AI analysis only for scheduled reports
     if (isScheduled) {
-              try {
-          const advice = await aiService.getAIAdvice(prices, btcDominance, btcDominanceChange);
-          message += advice;
-        } catch (aiError) {
+      try {
+        const advice = await aiService.getAIAdvice(
+          prices,
+          btcDominance,
+          btcDominanceChange
+        );
+        message += advice;
+      } catch (aiError) {
         console.log("⚠️ AI analysis failed, using simple summary");
         const simpleAnalysis = aiService.generateSimpleAnalysis(
           prices,
@@ -86,15 +93,15 @@ async function testAI() {
   console.log(`Gemini: ${geminiStatus}`);
   console.log(`DeepSeek: ${deepSeekStatus}`);
 
-      try {
-      const data = await marketService.getMarketData();
-      const analysis = await aiService.getAIAdvice(
-        data.prices,
-        data.btcDominance,
-        data.btcDominanceChange
-      );
-      console.log("✅ Analysis result:", analysis);
-    } catch (error) {
+  try {
+    const data = await marketService.getMarketData();
+    const analysis = await aiService.getAIAdvice(
+      data.prices,
+      data.btcDominance,
+      data.btcDominanceChange
+    );
+    console.log("✅ Analysis result:", analysis);
+  } catch (error) {
     console.log("⚠️ AI services unavailable, using simple analysis");
     const data = await marketService.getMarketData();
     const simpleAnalysis = aiService.generateSimpleAnalysis(

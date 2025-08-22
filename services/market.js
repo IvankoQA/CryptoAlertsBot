@@ -53,10 +53,12 @@ async function getMarketDataFromBinance() {
 
     // Get BTC dominance from external API
     let btcDominance = config.BTC_DOMINANCE_FALLBACK;
+    let btcDominanceChange = 0;
     try {
       // Try to get BTC dominance from CoinGecko global data
       const globalResponse = await axios.get("https://api.coingecko.com/api/v3/global");
       btcDominance = globalResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
+      btcDominanceChange = globalResponse.data.data.market_cap_change_percentage_24h_usd?.btc || 0;
     } catch (err) {
       console.log("Using fallback BTC dominance value");
     }
@@ -92,7 +94,7 @@ async function getMarketDataFromBinance() {
       altcoins: altcoinData,
     };
 
-    return { prices, btcDominance, topGainers };
+    return { prices, btcDominance, btcDominanceChange, topGainers };
   } catch (err) {
     throw new Error(`Binance API error: ${err.message}`);
   }
@@ -132,48 +134,24 @@ async function getMarketDataFromCoinGecko() {
 
     // Get BTC dominance from global data
     const btcDominance = globalResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
+    
+    // Get BTC dominance change from global data
+    const btcDominanceChange = globalResponse.data.data.market_cap_change_percentage_24h_usd?.btc || 0;
 
-    return { prices, btcDominance };
+    return { prices, btcDominance, btcDominanceChange };
   } catch (err) {
     throw new Error(`CoinGecko API error: ${err.message}`);
   }
 }
 
-// Store previous BTC dominance for comparison
-let previousBtcDominance = null;
-
 // ====== Get Market Data (with fallback) ======
 async function getMarketData() {
   try {
-    const data = await getMarketDataFromCoinGecko();
-    
-    // Calculate BTC dominance change
-    if (previousBtcDominance !== null) {
-      data.btcDominanceChange = ((data.btcDominance - previousBtcDominance) / previousBtcDominance) * 100;
-    } else {
-      data.btcDominanceChange = 0;
-    }
-    
-    // Update previous value
-    previousBtcDominance = data.btcDominance;
-    
-    return data;
+    return await getMarketDataFromCoinGecko();
   } catch (err) {
     // Fallback to Binance
     try {
-      const data = await getMarketDataFromBinance();
-      
-      // Calculate BTC dominance change
-      if (previousBtcDominance !== null) {
-        data.btcDominanceChange = ((data.btcDominance - previousBtcDominance) / previousBtcDominance) * 100;
-      } else {
-        data.btcDominanceChange = 0;
-      }
-      
-      // Update previous value
-      previousBtcDominance = data.btcDominance;
-      
-      return data;
+      return await getMarketDataFromBinance();
     } catch (err2) {
       throw new Error(`All APIs unavailable: ${err.message} | ${err2.message}`);
     }
