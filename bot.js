@@ -41,14 +41,13 @@ const FULL_REPORT_HOURS = process.env.FULL_REPORT_HOURS
 const COINS = process.env.MAIN_COINS
   ? process.env.MAIN_COINS.split(",")
   : ["bitcoin", "ethereum"]; // Main coins
-const ALTCOINS = process.env.ALTCOINS
-  ? process.env.ALTCOINS.split(",")
-  : []; // Will be populated dynamically from Binance top 100
+const ALTCOINS = process.env.ALTCOINS ? process.env.ALTCOINS.split(",") : []; // Will be populated dynamically from Binance top 100
 const BTC_DOMINANCE_FALLBACK =
   parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 52.5; // Fallback BTC dominance value
 
 // Price alert thresholds
-const PRICE_ALERT_THRESHOLD = parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 5; // % change for alerts
+const PRICE_ALERT_THRESHOLD =
+  parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 5; // % change for alerts
 const SCHEDULED_REPORT_HOURS = [8, 16, 22]; // Hours for full reports with AI
 
 // Store last prices for comparison
@@ -81,25 +80,30 @@ async function sendMessage(text) {
 async function getTopCoinsFromBinance() {
   try {
     // Get 24hr ticker for all symbols
-    const response = await axios.get("https://api.binance.com/api/v3/ticker/24hr");
+    const response = await axios.get(
+      "https://api.binance.com/api/v3/ticker/24hr"
+    );
     const allTickers = response.data;
-    
+
     // Filter USDT pairs and sort by volume
     const usdtPairs = allTickers
-      .filter(ticker => ticker.symbol.endsWith('USDT'))
-      .filter(ticker => parseFloat(ticker.quoteVolume) > 1000000) // Min $1M volume
+      .filter((ticker) => ticker.symbol.endsWith("USDT"))
+      .filter((ticker) => parseFloat(ticker.quoteVolume) > 1000000) // Min $1M volume
       .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
       .slice(0, 100); // Top 100 by volume
-    
+
     // Get top gainers (positive 24h change)
     const topGainers = usdtPairs
-      .filter(ticker => parseFloat(ticker.priceChangePercent) > 0)
-      .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent))
+      .filter((ticker) => parseFloat(ticker.priceChangePercent) > 0)
+      .sort(
+        (a, b) =>
+          parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent)
+      )
       .slice(0, 10); // Top 10 gainers
-    
+
     return {
       allPairs: usdtPairs,
-      topGainers: topGainers
+      topGainers: topGainers,
     };
   } catch (err) {
     console.error("Error getting top coins:", err.message);
@@ -123,7 +127,8 @@ async function getMarketDataFromBinance() {
     const ethData = ethResponse.data;
 
     // Calculate BTC dominance from 24hr ticker
-    const btcDominance = parseFloat(btcData.priceChangePercent) || BTC_DOMINANCE_FALLBACK;
+    const btcDominance =
+      parseFloat(btcData.priceChangePercent) || BTC_DOMINANCE_FALLBACK;
 
     // Process top gainers for altcoins
     const altcoinData = {};
@@ -200,49 +205,60 @@ async function getMarketDataFromCoinGecko() {
 // ====== Price Change Detection ======
 function checkSignificantPriceChanges(currentPrices, lastPrices) {
   if (!lastPrices) return null;
-  
+
   const alerts = [];
-  
+
   // Check BTC
   if (currentPrices.bitcoin && lastPrices.bitcoin) {
-    const btcChange = ((currentPrices.bitcoin.usd - lastPrices.bitcoin.usd) / lastPrices.bitcoin.usd) * 100;
+    const btcChange =
+      ((currentPrices.bitcoin.usd - lastPrices.bitcoin.usd) /
+        lastPrices.bitcoin.usd) *
+      100;
     if (Math.abs(btcChange) >= PRICE_ALERT_THRESHOLD) {
       alerts.push({
         coin: "BTC",
         change: btcChange,
         price: currentPrices.bitcoin.usd,
-        oldPrice: lastPrices.bitcoin.usd
+        oldPrice: lastPrices.bitcoin.usd,
       });
     }
   }
-  
+
   // Check ETH
   if (currentPrices.ethereum && lastPrices.ethereum) {
-    const ethChange = ((currentPrices.ethereum.usd - lastPrices.ethereum.usd) / lastPrices.ethereum.usd) * 100;
+    const ethChange =
+      ((currentPrices.ethereum.usd - lastPrices.ethereum.usd) /
+        lastPrices.ethereum.usd) *
+      100;
     if (Math.abs(ethChange) >= PRICE_ALERT_THRESHOLD) {
       alerts.push({
         coin: "ETH",
         change: ethChange,
         price: currentPrices.ethereum.usd,
-        oldPrice: lastPrices.ethereum.usd
+        oldPrice: lastPrices.ethereum.usd,
       });
     }
   }
-  
+
   return alerts.length > 0 ? alerts : null;
 }
 
 function createPriceAlert(alerts) {
   let message = "🚨 PRICE ALERT!\n\n";
-  
-  alerts.forEach(alert => {
+
+  alerts.forEach((alert) => {
     const direction = alert.change > 0 ? "📈" : "📉";
-    const changeStr = alert.change > 0 ? `+${alert.change.toFixed(2)}%` : `${alert.change.toFixed(2)}%`;
-    
-    message += `${direction} ${alert.coin}: $${alert.price.toLocaleString()} (${changeStr})\n`;
+    const changeStr =
+      alert.change > 0
+        ? `+${alert.change.toFixed(2)}%`
+        : `${alert.change.toFixed(2)}%`;
+
+    message += `${direction} ${
+      alert.coin
+    }: $${alert.price.toLocaleString()} (${changeStr})\n`;
     message += `Previous: $${alert.oldPrice.toLocaleString()}\n\n`;
   });
-  
+
   return message.trim();
 }
 
@@ -349,15 +365,19 @@ async function getGPTAdvice(prices, btcDominance) {
     }
   }
 
-          const prompt = `Crypto trader analysis. Data: BTC $${prices.bitcoin.usd} (${prices.bitcoin.change_24h?.toFixed(2) || "N/A"}%), ETH $${prices.ethereum.usd} (${prices.ethereum.change_24h?.toFixed(2) || "N/A"}%), BTC dominance ${btcDominance.toFixed(2)}%${altcoinInfo}
+  const prompt = `Crypto trader analysis. Data: BTC $${prices.bitcoin.usd} (${
+    prices.bitcoin.change_24h?.toFixed(2) || "N/A"
+  }%), ETH $${prices.ethereum.usd} (${
+    prices.ethereum.change_24h?.toFixed(2) || "N/A"
+  }%), BTC dominance ${btcDominance.toFixed(2)}%${altcoinInfo}
 
         Brief analysis:
         📉 Trend: Key levels
         📊 BTC Dominance: Altseason timing
-        💰 Actions: BTC/ETH buy/sell levels
+        💰 Actions: BTC buy at $X, sell at $Y. ETH buy at $X, sell at $Y
         🚀 Altcoins: Top opportunities
 
-        Be concise, specific levels, trader style.`;
+        Give specific price levels for entry/exit. Be concise, trader style.`;
 
   // Try OpenAI
   if (hasOpenAI) {
@@ -450,9 +470,13 @@ function generateSimpleAnalysis(prices, btcDominance) {
   else dominance = "Low BTC dominance - potential altseason";
   
   let recommendation = "";
-  if (btcChange < -5) recommendation = "Consider buying the dip";
-  else if (btcChange > 5) recommendation = "Consider taking profits";
-  else recommendation = "Hold current positions";
+  if (btcChange < -5) {
+    recommendation = "Consider buying the dip";
+  } else if (btcChange > 5) {
+    recommendation = "Consider taking profits";
+  } else {
+    recommendation = "Hold current positions";
+  }
   
   // Add top gainers info
   let altcoinInfo = "";
@@ -461,9 +485,16 @@ function generateSimpleAnalysis(prices, btcDominance) {
       .sort(([_, a], [__, b]) => b.change_24h - a.change_24h)
       .slice(0, 5);
     
-    altcoinInfo = "\n🚀 Top Gainers:\n" + topGainers
-      .map(([coin, data]) => `${coin}: +${data.change_24h.toFixed(2)}% ($${data.usd.toLocaleString()})`)
-      .join("\n");
+    altcoinInfo =
+      "\n🚀 Top Gainers:\n" +
+      topGainers
+        .map(
+          ([coin, data]) =>
+            `${coin}: +${data.change_24h.toFixed(
+              2
+            )}% ($${data.usd.toLocaleString()})`
+        )
+        .join("\n");
   }
   
   return `🤖 Market Analysis (Simple):
@@ -482,7 +513,9 @@ async function createReport(isScheduled = false) {
     // Main coins info
     COINS.forEach((coin) => {
       const p = prices[coin];
-      message += `*${coin.toUpperCase()}*: $${p.usd.toLocaleString()}\n24h: ${p.change_24h.toFixed(2)}% (min: $${p.usd_24h_low.toLocaleString()}, max: $${p.usd_24h_high.toLocaleString()})\n\n`;
+      message += `*${coin.toUpperCase()}*: $${p.usd.toLocaleString()}\n24h: ${p.change_24h.toFixed(
+        2
+      )}% (min: $${p.usd_24h_low.toLocaleString()}, max: $${p.usd_24h_high.toLocaleString()})\n\n`;
     });
 
     message += `📈 BTC dominance: ${btcDominance.toFixed(2)}%\n\n`;
@@ -620,7 +653,10 @@ async function testAI() {
   } catch (error) {
     console.log("⚠️ AI services unavailable, using simple analysis");
     const data = await getMarketData();
-    const simpleAnalysis = generateSimpleAnalysis(data.prices, data.btcDominance);
+    const simpleAnalysis = generateSimpleAnalysis(
+      data.prices,
+      data.btcDominance
+    );
     console.log("✅ Simple analysis result:", simpleAnalysis);
   }
 }
@@ -687,16 +723,19 @@ async function main() {
   setInterval(async () => {
     try {
       const currentPrices = await getMarketData();
-      
+
       // Check for significant price changes
-      const priceAlerts = checkSignificantPriceChanges(currentPrices.prices, lastPrices);
-      
+      const priceAlerts = checkSignificantPriceChanges(
+        currentPrices.prices,
+        lastPrices
+      );
+
       if (priceAlerts) {
         console.log("🚨 Significant price changes detected!");
         const alertMessage = createPriceAlert(priceAlerts);
         await sendMessage(alertMessage);
       }
-      
+
       // Send scheduled full reports
       if (shouldSendFullReport()) {
         console.log("📊 Sending scheduled full report...");
@@ -707,10 +746,9 @@ async function main() {
           await createReport(false); // Simple report without AI
         }
       }
-      
+
       // Update last prices for next comparison
       lastPrices = currentPrices.prices;
-      
     } catch (error) {
       console.error("❌ Price check failed:", error.message);
     }
