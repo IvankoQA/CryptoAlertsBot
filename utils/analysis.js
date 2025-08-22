@@ -60,7 +60,51 @@ function createPriceAlert(alerts) {
   return message.trim();
 }
 
+// ====== Significant Changes Check for Scheduled Reports ======
+function hasSignificantChanges(currentPrices, lastPrices, minChangePercent) {
+  if (!lastPrices) return true; // First run, always send report
+
+  // Check BTC
+  if (currentPrices.bitcoin && lastPrices.bitcoin) {
+    const btcChange =
+      ((currentPrices.bitcoin.usd - lastPrices.bitcoin.usd) /
+        lastPrices.bitcoin.usd) *
+      100;
+    if (Math.abs(btcChange) >= minChangePercent) {
+      return true;
+    }
+  }
+
+  // Check ETH
+  if (currentPrices.ethereum && lastPrices.ethereum) {
+    const ethChange =
+      ((currentPrices.ethereum.usd - lastPrices.ethereum.usd) /
+        lastPrices.ethereum.usd) *
+      100;
+    if (Math.abs(ethChange) >= minChangePercent) {
+      return true;
+    }
+  }
+
+  // Check altcoins
+  if (currentPrices.altcoins && lastPrices.altcoins) {
+    for (const [coin, currentData] of Object.entries(currentPrices.altcoins)) {
+      const lastData = lastPrices.altcoins[coin];
+      if (lastData && currentData.usd && lastData.usd) {
+        const change =
+          ((currentData.usd - lastData.usd) / lastData.usd) * 100;
+        if (Math.abs(change) >= minChangePercent) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 module.exports = {
   checkSignificantPriceChanges,
-  createPriceAlert
+  createPriceAlert,
+  hasSignificantChanges
 };

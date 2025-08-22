@@ -172,14 +172,25 @@ async function main() {
         await telegramService.sendMessage(alertMessage);
       }
 
-      // Send scheduled full reports
+      // Send scheduled full reports only if significant changes
       if (helpers.shouldSendFullReport()) {
-        console.log("📊 Sending scheduled full report...");
-        try {
-          await createReport(true); // Full report with AI
-        } catch (error) {
-          console.log("⚠️ AI report failed, sending simple report...");
-          await createReport(false); // Simple report without AI
+        // Check if there are significant changes before sending report
+        const hasSignificantChanges = analysisUtils.hasSignificantChanges(
+          currentPrices.prices,
+          lastPrices,
+          config.SCHEDULED_REPORT_MIN_CHANGE
+        );
+
+        if (hasSignificantChanges) {
+          console.log(`📊 Sending scheduled full report (changes > ${config.SCHEDULED_REPORT_MIN_CHANGE}%)...`);
+          try {
+            await createReport(true); // Full report with AI
+          } catch (error) {
+            console.log("⚠️ AI report failed, sending simple report...");
+            await createReport(false); // Simple report without AI
+          }
+        } else {
+          console.log(`⏭️ Skipping scheduled report - no significant changes (> ${config.SCHEDULED_REPORT_MIN_CHANGE}%)`);
         }
       }
 

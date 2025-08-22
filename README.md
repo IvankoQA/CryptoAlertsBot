@@ -103,19 +103,20 @@ node bot.js report       # Send immediate report
 | ------------------------ | ---------------- | ------------------------------ |
 | `CHECK_INTERVAL_MIN`     | 15               | Minutes between price checks   |
 | `PRICE_ALERT_THRESHOLD`  | 5                | % change for price alerts      |
-| `SCHEDULED_REPORT_HOURS` | 8,16,22          | Hours for scheduled reports    |
+| `SCHEDULED_REPORT_HOURS` | 8,14,17,20,23    | Hours for scheduled reports    |
 | `MAIN_COINS`             | bitcoin,ethereum | Main coins to monitor          |
 | `FULL_REPORT_HOURS`      | 8,18,22          | Hours for full AI reports      |
 | `BTC_DOMINANCE_FALLBACK` | 50.0             | Fallback BTC dominance %       |
 | `MIN_VOLUME_USD`         | 1000000          | Minimum volume for altcoins    |
 | `TOP_COINS_LIMIT`        | 100              | Number of top coins to monitor |
 | `TOP_GAINERS_LIMIT`      | 5                | Number of top gainers to show  |
+| `SCHEDULED_REPORT_MIN_CHANGE` | 2.0              | Min % change for scheduled reports |
 | `AI_MAX_TOKENS`          | 2000             | Max tokens for AI responses    |
 | `AI_TEST_TOKENS`         | 50               | Tokens for AI service tests    |
 
 ## 📱 Telegram Messages
 
-### Scheduled Reports (8:00, 16:00, 22:00)
+### Scheduled Reports (8:00, 14:00, 17:00, 20:00, 23:00)
 
 ```
 🚀 Crypto Report

@@ -40,9 +40,10 @@ const BTC_DOMINANCE_FALLBACK =
 // Price alert thresholds
 const PRICE_ALERT_THRESHOLD =
   parseFloat(process.env.PRICE_ALERT_THRESHOLD) || 5;
+const SCHEDULED_REPORT_MIN_CHANGE = parseFloat(process.env.SCHEDULED_REPORT_MIN_CHANGE) || 2.0;
 const SCHEDULED_REPORT_HOURS = process.env.SCHEDULED_REPORT_HOURS
   ? process.env.SCHEDULED_REPORT_HOURS.split(",").map((h) => parseInt(h))
-  : [8, 16, 22];
+  : [8, 14, 17, 20, 23];
 
 // Market data limits
 const MIN_VOLUME_USD = parseFloat(process.env.MIN_VOLUME_USD) || 1000000;
@@ -67,6 +68,7 @@ module.exports = {
   ALTCOINS,
   BTC_DOMINANCE_FALLBACK,
   PRICE_ALERT_THRESHOLD,
+  SCHEDULED_REPORT_MIN_CHANGE,
   SCHEDULED_REPORT_HOURS,
   MIN_VOLUME_USD,
   TOP_COINS_LIMIT,
