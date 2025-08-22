@@ -2,8 +2,6 @@ require("dotenv").config();
 const axios = require("axios");
 const { OpenAI } = require("openai");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const Anthropic = require("@anthropic-ai/sdk");
-const { HfInference } = require("@huggingface/inference");
 
 // ====== Проверка переменных окружения ======
 const requiredEnvVars = ["TG_BOT_TOKEN", "TG_CHAT_ID"];
@@ -21,12 +19,10 @@ if (missingVars.length > 0) {
 // Проверяем наличие хотя бы одного AI API
 const hasOpenAI = !!process.env.OPENAI_API_KEY;
 const hasGemini = !!process.env.GEMINI_API_KEY;
-const hasClaude = !!process.env.ANTHROPIC_API_KEY;
-const hasHuggingFace = !!process.env.HUGGINGFACE_API_KEY;
 
-if (!hasOpenAI && !hasGemini && !hasClaude && !hasHuggingFace) {
+if (!hasOpenAI && !hasGemini) {
   console.error("❌ Missing AI API keys");
-  console.error("Add OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or HUGGINGFACE_API_KEY to .env file");
+  console.error("Add OPENAI_API_KEY or GEMINI_API_KEY to .env file");
   process.exit(1);
 }
 
@@ -49,8 +45,6 @@ const BTC_DOMINANCE_FALLBACK =
 // ====== AI сервисы ======
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 // ====== Функция отправки сообщений ======
 async function sendMessage(text) {
@@ -233,33 +227,7 @@ async function testGemini() {
   }
 }
 
-async function testClaude() {
-  if (!hasClaude) return false;
-  try {
-    await claude.messages.create({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 5,
-      messages: [{ role: "user", content: "Test" }]
-    });
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
 
-async function testHuggingFace() {
-  if (!hasHuggingFace) return false;
-  try {
-    await hf.textGeneration({
-      model: "microsoft/DialoGPT-medium",
-      inputs: "Test",
-      parameters: { max_new_tokens: 5 }
-    });
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
 
 // ====== AI анализ ======
 async function getGPTAdvice(prices, btcDominance) {
@@ -360,39 +328,7 @@ RULES:
     }
   }
 
-  // Try Claude
-  if (hasClaude) {
-    try {
-      const isClaudeAvailable = await testClaude();
-      if (isClaudeAvailable) {
-        const response = await claude.messages.create({
-          model: "claude-3-haiku-20240307",
-          max_tokens: 200,
-          messages: [{ role: "user", content: prompt }]
-        });
-        return `🤖 AI Analysis (Claude):\n${response.content[0].text}`;
-      }
-    } catch (err) {
-      // Continue
-    }
-  }
 
-  // Try Hugging Face
-  if (hasHuggingFace) {
-    try {
-      const isHuggingFaceAvailable = await testHuggingFace();
-      if (isHuggingFaceAvailable) {
-        const response = await hf.textGeneration({
-          model: "microsoft/DialoGPT-medium",
-          inputs: prompt,
-          parameters: { max_new_tokens: 150 }
-        });
-        return `🤖 AI Analysis (HuggingFace):\n${response.generated_text}`;
-      }
-    } catch (err) {
-      // Continue
-    }
-  }
 
   throw new Error("AI services unavailable. Check API keys and limits.");
 }
@@ -447,30 +383,17 @@ async function checkStatus() {
   console.log(
     `  GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"}`
   );
-  console.log(
-    `  ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? "✅ Set" : "❌ Missing"}`
-  );
-  console.log(
-    `  HUGGINGFACE_API_KEY: ${process.env.HUGGINGFACE_API_KEY ? "✅ Set" : "❌ Missing"}`
-  );
+
 
   // AI Services check
   console.log("\n🤖 AI Services:");
   const isOpenAIAvailable = await testOpenAI();
   const isGeminiAvailable = await testGemini();
-  const isClaudeAvailable = await testClaude();
-  const isHuggingFaceAvailable = await testHuggingFace();
   console.log(
     `  OpenAI: ${isOpenAIAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
   console.log(
     `  Gemini: ${isGeminiAvailable ? "✅ Available" : "❌ Unavailable"}`
-  );
-  console.log(
-    `  Claude: ${isClaudeAvailable ? "✅ Available" : "❌ Unavailable"}`
-  );
-  console.log(
-    `  HuggingFace: ${isHuggingFaceAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
 
   // Data APIs check
@@ -512,13 +435,9 @@ async function testAI() {
 
   const openaiStatus = (await testOpenAI()) ? "✅ Available" : "❌ Unavailable";
   const geminiStatus = (await testGemini()) ? "✅ Available" : "❌ Unavailable";
-  const claudeStatus = (await testClaude()) ? "✅ Available" : "❌ Unavailable";
-  const huggingFaceStatus = (await testHuggingFace()) ? "✅ Available" : "❌ Unavailable";
 
   console.log(`OpenAI: ${openaiStatus}`);
   console.log(`Gemini: ${geminiStatus}`);
-  console.log(`Claude: ${claudeStatus}`);
-  console.log(`HuggingFace: ${huggingFaceStatus}`);
 
   try {
     const data = await getMarketData();
