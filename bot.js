@@ -23,7 +23,9 @@ const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
 
 if (!hasOpenAI && !hasGemini && !hasDeepSeek) {
   console.error("❌ Missing AI API keys");
-  console.error("Add OPENAI_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env file");
+  console.error(
+    "Add OPENAI_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env file"
+  );
   process.exit(1);
 }
 
@@ -240,7 +242,7 @@ async function testDeepSeek() {
       },
       {
         headers: {
-          "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
           "Content-Type": "application/json",
         },
       }
@@ -364,7 +366,7 @@ RULES:
           },
           {
             headers: {
-              "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+              Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
               "Content-Type": "application/json",
             },
           }
@@ -430,7 +432,9 @@ async function checkStatus() {
     `  GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"}`
   );
   console.log(
-    `  DEEPSEEK_API_KEY: ${process.env.DEEPSEEK_API_KEY ? "✅ Set" : "❌ Missing"}`
+    `  DEEPSEEK_API_KEY: ${
+      process.env.DEEPSEEK_API_KEY ? "✅ Set" : "❌ Missing"
+    }`
   );
 
   // AI Services check
@@ -487,7 +491,9 @@ async function testAI() {
 
   const openaiStatus = (await testOpenAI()) ? "✅ Available" : "❌ Unavailable";
   const geminiStatus = (await testGemini()) ? "✅ Available" : "❌ Unavailable";
-  const deepSeekStatus = (await testDeepSeek()) ? "✅ Available" : "❌ Unavailable";
+  const deepSeekStatus = (await testDeepSeek())
+    ? "✅ Available"
+    : "❌ Unavailable";
 
   console.log(`OpenAI: ${openaiStatus}`);
   console.log(`Gemini: ${geminiStatus}`);
