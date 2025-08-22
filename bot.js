@@ -2,8 +2,9 @@ require("dotenv").config();
 const axios = require("axios");
 const { OpenAI } = require("openai");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { HfInference } = require("@huggingface/inference");
 
-// ====== Проверка переменных окружения ======
+// ====== Environment Variables Check ======
 const requiredEnvVars = ["TG_BOT_TOKEN", "TG_CHAT_ID"];
 const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
@@ -20,34 +21,36 @@ if (missingVars.length > 0) {
 const hasOpenAI = !!process.env.OPENAI_API_KEY;
 const hasGemini = !!process.env.GEMINI_API_KEY;
 const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
+const hasHuggingFace = !!process.env.HUGGINGFACE_API_KEY;
 
-if (!hasOpenAI && !hasGemini && !hasDeepSeek) {
+if (!hasOpenAI && !hasGemini && !hasDeepSeek && !hasHuggingFace) {
   console.error("❌ Missing AI API keys");
   console.error(
-    "Add OPENAI_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env file"
+    "Add OPENAI_API_KEY, GEMINI_API_KEY, DEEPSEEK_API_KEY, or HUGGINGFACE_API_KEY to .env file"
   );
   process.exit(1);
 }
 
-// ====== Настройки ======
+// ====== Configuration ======
 const BOT_TOKEN = process.env.TG_BOT_TOKEN; // Telegram Bot Token
-const CHAT_ID = process.env.TG_CHAT_ID; // Ваш chat_id
-const CHECK_INTERVAL_MIN = parseInt(process.env.CHECK_INTERVAL_MIN) || 15; // Проверка рынка каждые N минут
+const CHAT_ID = process.env.TG_CHAT_ID; // Your chat_id
+const CHECK_INTERVAL_MIN = parseInt(process.env.CHECK_INTERVAL_MIN) || 15; // Market check interval in minutes
 const FULL_REPORT_HOURS = process.env.FULL_REPORT_HOURS
   ? process.env.FULL_REPORT_HOURS.split(",").map((h) => parseInt(h))
-  : [8, 18, 22]; // Часы для полного отчета
+  : [8, 18, 22]; // Hours for full reports
 const COINS = process.env.MAIN_COINS
   ? process.env.MAIN_COINS.split(",")
-  : ["bitcoin", "ethereum"]; // Основные монеты
+  : ["bitcoin", "ethereum"]; // Main coins
 const ALTCOINS = process.env.ALTCOINS
   ? process.env.ALTCOINS.split(",")
-  : ["ADAUSDT", "SOLUSDT", "DOTUSDT", "AVAXUSDT", "MATICUSDT"]; // Альткоины для мониторинга
+  : ["ADAUSDT", "SOLUSDT", "DOTUSDT", "AVAXUSDT", "MATICUSDT"]; // Altcoins for monitoring
 const BTC_DOMINANCE_FALLBACK =
-  parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 52.5; // Fallback значение BTC dominance
+  parseFloat(process.env.BTC_DOMINANCE_FALLBACK) || 52.5; // Fallback BTC dominance value
 
 // ====== AI сервисы ======
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 // ====== Функция отправки сообщений ======
 async function sendMessage(text) {
@@ -253,6 +256,21 @@ async function testDeepSeek() {
   }
 }
 
+async function testHuggingFace() {
+  if (!hasHuggingFace) return false;
+  try {
+    await hf.textGeneration({
+      model: "distilgpt2",
+      inputs: "Hello",
+      parameters: { max_new_tokens: 3 },
+    });
+    return true;
+  } catch (err) {
+    console.log("HuggingFace test error:", err.message);
+    return false;
+  }
+}
+
 // ====== AI анализ ======
 async function getGPTAdvice(prices, btcDominance) {
   // Form altcoin data
@@ -378,6 +396,8 @@ RULES:
     }
   }
 
+
+
   throw new Error("AI services unavailable. Check API keys and limits.");
 }
 
@@ -436,12 +456,18 @@ async function checkStatus() {
       process.env.DEEPSEEK_API_KEY ? "✅ Set" : "❌ Missing"
     }`
   );
+  console.log(
+    `  HUGGINGFACE_API_KEY: ${
+      process.env.HUGGINGFACE_API_KEY ? "✅ Set" : "❌ Missing"
+    }`
+  );
 
   // AI Services check
   console.log("\n🤖 AI Services:");
   const isOpenAIAvailable = await testOpenAI();
   const isGeminiAvailable = await testGemini();
   const isDeepSeekAvailable = await testDeepSeek();
+  const isHuggingFaceAvailable = await testHuggingFace();
   console.log(
     `  OpenAI: ${isOpenAIAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
@@ -450,6 +476,9 @@ async function checkStatus() {
   );
   console.log(
     `  DeepSeek: ${isDeepSeekAvailable ? "✅ Available" : "❌ Unavailable"}`
+  );
+  console.log(
+    `  HuggingFace: ${isHuggingFaceAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
 
   // Data APIs check
