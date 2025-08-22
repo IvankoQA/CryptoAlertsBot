@@ -55,11 +55,11 @@ async function handleCommand(command, chatId) {
         await sendHelp(chatId);
         break;
       default:
-        await telegramService.sendMessage("❌ Неизвестная команда. Используйте /help для списка команд.");
+        await telegramService.sendMessage("❌ Unknown command. Use /help for command list.");
     }
   } catch (err) {
     console.error("Command handling failed:", err.message);
-    await telegramService.sendMessage("❌ Ошибка обработки команды");
+    await telegramService.sendMessage("❌ Command processing error");
   }
 }
 
@@ -70,46 +70,46 @@ async function handleCallbackQuery(callbackQuery) {
     
     switch (data) {
       case "report":
-        await telegramService.answerCallbackQuery(id, "📊 Генерирую отчет...");
+        await telegramService.answerCallbackQuery(id, "📊 Generating report...");
         await sendReport();
         break;
       case "status":
-        await telegramService.answerCallbackQuery(id, "🔍 Проверяю статус...");
+        await telegramService.answerCallbackQuery(id, "🔍 Checking status...");
         await sendStatus();
         break;
       case "help":
-        await telegramService.answerCallbackQuery(id, "📖 Показываю справку...");
+        await telegramService.answerCallbackQuery(id, "📖 Showing help...");
         await sendHelp();
         break;
       default:
-        await telegramService.answerCallbackQuery(id, "❌ Неизвестная команда");
+        await telegramService.answerCallbackQuery(id, "❌ Unknown command");
     }
   } catch (err) {
     console.error("Callback query handling failed:", err.message);
-    await telegramService.answerCallbackQuery(callbackQuery.id, "❌ Ошибка обработки");
+    await telegramService.answerCallbackQuery(callbackQuery.id, "❌ Processing error");
   }
 }
 
 // ====== Send Welcome Message ======
 async function sendWelcomeMessage(chatId = config.CHAT_ID) {
-  const message = `🤖 *Добро пожаловать в Crypto Bot!*
+  const message = `🤖 *Welcome to Crypto Bot!*
 
-Я отслеживаю цены криптовалют и отправляю уведомления о важных изменениях.
+I monitor cryptocurrency prices and send notifications about important changes.
 
-*Доступные команды:*
-📊 /report - Получить отчет сейчас
-🔍 /status - Проверить статус сервисов
-📖 /help - Показать справку
+*Available commands:*
+📊 /report - Get report now
+🔍 /status - Check services status
+📖 /help - Show help
 
-*Или используйте кнопки ниже:*`;
+*Or use buttons below:*`;
 
   const keyboard = [
     [
-      { text: "📊 Отчет", callback_data: "report" },
-      { text: "🔍 Статус", callback_data: "status" }
+      { text: "📊 Report", callback_data: "report" },
+      { text: "🔍 Status", callback_data: "status" }
     ],
     [
-      { text: "📖 Справка", callback_data: "help" }
+      { text: "📖 Help", callback_data: "help" }
     ]
   ];
 
@@ -119,7 +119,7 @@ async function sendWelcomeMessage(chatId = config.CHAT_ID) {
 // ====== Send Report ======
 async function sendReport(chatId = config.CHAT_ID) {
   try {
-    await telegramService.sendMessage("📊 *Генерирую отчет...*");
+    await telegramService.sendMessage("📊 *Generating report...*");
     
     const { prices, btcDominance } = await marketService.getMarketData();
     let message = "🚀 *Crypto Report*\n\n";
@@ -156,60 +156,60 @@ async function sendReport(chatId = config.CHAT_ID) {
     await telegramService.sendMessage(message);
   } catch (err) {
     console.error("Report generation failed:", err.message);
-    await telegramService.sendMessage("❌ *Ошибка генерации отчета*\n\nПопробуйте позже.");
+    await telegramService.sendMessage("❌ *Report generation error*\n\nTry again later.");
   }
 }
 
 // ====== Send Status ======
 async function sendStatus(chatId = config.CHAT_ID) {
   try {
-    const message = `🔍 *Статус сервисов*
+    const message = `🔍 *Services Status*
 
 📊 *Market Data:*
-• Binance API: ✅ Работает
-• CoinGecko API: ✅ Работает
+• Binance API: ✅ Working
+• CoinGecko API: ✅ Working
 
 🤖 *AI Services:*
 • OpenAI: ${await aiService.testOpenAI() ? "✅" : "❌"}
 • Gemini: ${await aiService.testGemini() ? "✅" : "❌"}
 • DeepSeek: ${await aiService.testDeepSeek() ? "✅" : "❌"}
 
-⚙️ *Настройки:*
-• Проверка каждые: ${config.CHECK_INTERVAL_MIN} минут
-• Порог уведомлений: ${config.PRICE_ALERT_THRESHOLD}%
-• Отчеты в: ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00
+⚙️ *Settings:*
+• Check every: ${config.CHECK_INTERVAL_MIN} minutes
+• Alert threshold: ${config.PRICE_ALERT_THRESHOLD}%
+• Reports at: ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00
 
-✅ *Бот работает и мониторит рынок*`;
+✅ *Bot is running and monitoring the market*`;
 
     await telegramService.sendMessage(message);
   } catch (err) {
     console.error("Status check failed:", err.message);
-    await telegramService.sendMessage("❌ *Ошибка проверки статуса*");
+    await telegramService.sendMessage("❌ *Status check error*");
   }
 }
 
 // ====== Send Help ======
 async function sendHelp(chatId = config.CHAT_ID) {
-  const message = `📖 *Справка по командам*
+  const message = `📖 *Command Help*
 
-*Основные команды:*
-📊 /report - Получить полный отчет с AI анализом
-🔍 /status - Проверить статус всех сервисов
-📖 /help - Показать эту справку
+*Main commands:*
+📊 /report - Get full report with AI analysis
+🔍 /status - Check all services status
+📖 /help - Show this help
 
-*Автоматические уведомления:*
-🚨 Price Alerts - каждые ${config.CHECK_INTERVAL_MIN} минут при изменении > ${config.PRICE_ALERT_THRESHOLD}%
-📊 Scheduled Reports - в ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00
+*Automatic notifications:*
+🚨 Price Alerts - every ${config.CHECK_INTERVAL_MIN} minutes when change > ${config.PRICE_ALERT_THRESHOLD}%
+📊 Scheduled Reports - at ${config.SCHEDULED_REPORT_HOURS.join(", ")}:00
 
-*Мониторируемые монеты:*
+*Monitored coins:*
 ${config.COINS.map(coin => `• ${coin.toUpperCase()}`).join("\n")}
 
-*Поддерживаемые AI:*
+*Supported AI:*
 • OpenAI GPT
 • Google Gemini
 • DeepSeek
 
-Бот работает 24/7 и автоматически перезапускается при сбоях.`;
+Bot runs 24/7 and automatically restarts on failures.`;
 
   await telegramService.sendMessage(message);
 }

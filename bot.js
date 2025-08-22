@@ -134,7 +134,7 @@ async function main() {
 
   // Start HTTP server for Railway healthcheck
   startServer();
-  
+
   // Setup Telegram webhook
   await setupWebhook();
 

@@ -29,8 +29,8 @@ async function sendMessageWithKeyboard(text, keyboard) {
         text: text,
         parse_mode: "Markdown",
         reply_markup: {
-          inline_keyboard: keyboard
-        }
+          inline_keyboard: keyboard,
+        },
       }
     );
     return response.data;
@@ -47,7 +47,7 @@ async function answerCallbackQuery(callbackQueryId, text) {
       `https://api.telegram.org/bot${config.BOT_TOKEN}/answerCallbackQuery`,
       {
         callback_query_id: callbackQueryId,
-        text: text
+        text: text,
       }
     );
   } catch (err) {
@@ -58,5 +58,5 @@ async function answerCallbackQuery(callbackQueryId, text) {
 module.exports = {
   sendMessage,
   sendMessageWithKeyboard,
-  answerCallbackQuery
+  answerCallbackQuery,
 };
