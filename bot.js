@@ -19,10 +19,11 @@ if (missingVars.length > 0) {
 // Проверяем наличие хотя бы одного AI API
 const hasOpenAI = !!process.env.OPENAI_API_KEY;
 const hasGemini = !!process.env.GEMINI_API_KEY;
+const hasDeepSeek = !!process.env.DEEPSEEK_API_KEY;
 
-if (!hasOpenAI && !hasGemini) {
+if (!hasOpenAI && !hasGemini && !hasDeepSeek) {
   console.error("❌ Missing AI API keys");
-  console.error("Add OPENAI_API_KEY or GEMINI_API_KEY to .env file");
+  console.error("Add OPENAI_API_KEY, GEMINI_API_KEY, or DEEPSEEK_API_KEY to .env file");
   process.exit(1);
 }
 
@@ -227,7 +228,28 @@ async function testGemini() {
   }
 }
 
-
+async function testDeepSeek() {
+  if (!hasDeepSeek) return false;
+  try {
+    await axios.post(
+      "https://api.deepseek.com/v1/chat/completions",
+      {
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: "Test" }],
+        max_tokens: 5,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
 
 // ====== AI анализ ======
 async function getGPTAdvice(prices, btcDominance) {
@@ -328,7 +350,31 @@ RULES:
     }
   }
 
-
+  // Try DeepSeek
+  if (hasDeepSeek) {
+    try {
+      const isDeepSeekAvailable = await testDeepSeek();
+      if (isDeepSeekAvailable) {
+        const response = await axios.post(
+          "https://api.deepseek.com/v1/chat/completions",
+          {
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 200,
+          },
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        return `🤖 AI Analysis (DeepSeek):\n${response.data.choices[0].message.content}`;
+      }
+    } catch (err) {
+      // Continue
+    }
+  }
 
   throw new Error("AI services unavailable. Check API keys and limits.");
 }
@@ -383,17 +429,23 @@ async function checkStatus() {
   console.log(
     `  GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"}`
   );
-
+  console.log(
+    `  DEEPSEEK_API_KEY: ${process.env.DEEPSEEK_API_KEY ? "✅ Set" : "❌ Missing"}`
+  );
 
   // AI Services check
   console.log("\n🤖 AI Services:");
   const isOpenAIAvailable = await testOpenAI();
   const isGeminiAvailable = await testGemini();
+  const isDeepSeekAvailable = await testDeepSeek();
   console.log(
     `  OpenAI: ${isOpenAIAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
   console.log(
     `  Gemini: ${isGeminiAvailable ? "✅ Available" : "❌ Unavailable"}`
+  );
+  console.log(
+    `  DeepSeek: ${isDeepSeekAvailable ? "✅ Available" : "❌ Unavailable"}`
   );
 
   // Data APIs check
@@ -435,9 +487,11 @@ async function testAI() {
 
   const openaiStatus = (await testOpenAI()) ? "✅ Available" : "❌ Unavailable";
   const geminiStatus = (await testGemini()) ? "✅ Available" : "❌ Unavailable";
+  const deepSeekStatus = (await testDeepSeek()) ? "✅ Available" : "❌ Unavailable";
 
   console.log(`OpenAI: ${openaiStatus}`);
   console.log(`Gemini: ${geminiStatus}`);
+  console.log(`DeepSeek: ${deepSeekStatus}`);
 
   try {
     const data = await getMarketData();
