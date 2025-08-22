@@ -80,10 +80,16 @@ async function getMarketDataFromBinance() {
     // Get BTC dominance from CoinGecko
     let btcDominance = config.BTC_DOMINANCE_FALLBACK;
     try {
-      const dominanceResponse = await axios.get("https://api.coingecko.com/api/v3/global");
-      btcDominance = dominanceResponse.data.data.market_cap_percentage.btc || config.BTC_DOMINANCE_FALLBACK;
+      const dominanceResponse = await axios.get(
+        "https://api.coingecko.com/api/v3/global"
+      );
+      btcDominance =
+        dominanceResponse.data.data.market_cap_percentage.btc ||
+        config.BTC_DOMINANCE_FALLBACK;
     } catch (err) {
-      console.log("CoinGecko global data unavailable, using fallback BTC dominance value");
+      console.log(
+        "CoinGecko global data unavailable, using fallback BTC dominance value"
+      );
       btcDominance = 55.0; // Conservative estimate
     }
 
